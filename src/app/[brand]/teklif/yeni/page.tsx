@@ -8,7 +8,7 @@ import { formatCurrency, getCurrencySymbol, numberToText, generateProposalNo, ge
 import type { ProposalItem, Proposal } from '@/lib/types';
 import {
   Plus, Trash2, Copy, GripVertical, Eye, EyeOff, Truck, Save, FileDown,
-  Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw
+  Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw, Package
 } from 'lucide-react';
 
 export default function YeniTeklifPage() {
@@ -16,7 +16,7 @@ export default function YeniTeklifPage() {
   const router = useRouter();
   const brandId = params.brand as string;
   const brand = getBrand(brandId);
-  const { products, customers, addProposal, rates } = useAppStore();
+  const { products, customers, addProposal, addProduct, rates } = useAppStore();
   const printRef = useRef<HTMLDivElement>(null);
 
   // Editable exchange rate (TCMB'den gelir, kullanıcı değiştirebilir)
@@ -45,10 +45,10 @@ export default function YeniTeklifPage() {
   const [currency, setCurrency] = useState('TRY');
   const [inputCurrency] = useState('EUR'); // Ürünler EUR bazlı gelir
   const [discountValue, setDiscountValue] = useState(0);
-  const [includeVAT, setIncludeVAT] = useState(true);
+  const [includeVAT, setIncludeVAT] = useState(false);
   const [globalHidePrices, setGlobalHidePrices] = useState(false);
   const [conditions, setConditions] = useState(
-    `• Geçerlilik süresi: ${getValidityDate()} tarihine kadardır.\n• Ödeme: Sipariş ile birlikte.\n• Teslimat: Stok durumuna göre 1-4 hafta.\n• Fiyatlara KDV dahildir.\n• Nakliye alıcıya aittir.`
+    `• Geçerlilik süresi: ${getValidityDate()} tarihine kadardır.\n• Ödeme: Sipariş ile birlikte.\n• Teslimat: Stok durumuna göre 1-4 hafta.\n• Fiyatlara KDV dahil değildir.\n• Nakliye alıcıya aittir.`
   );
   const [isPrintMode, setIsPrintMode] = useState(false);
   const [isCompactMode, setIsCompactMode] = useState(false);
@@ -58,6 +58,10 @@ export default function YeniTeklifPage() {
 
   // New item form
   const [newItem, setNewItem] = useState({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
+
+  // New product form (kataloga kaydetme)
+  const [showNewProductForm, setShowNewProductForm] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: '', category: '', price: '', cost: '', image: '', product_link: '' });
 
   // Livesearch state for product name input
   const [nameSuggestions, setNameSuggestions] = useState<typeof brandProducts>([]);
@@ -132,7 +136,7 @@ export default function YeniTeklifPage() {
   const addFromProduct = (p: any) => {
     const priceInTry = eurToTry(p.price);
     const costInTry = eurToTry(p.cost || 0);
-    addItem({ name: p.name, description: p.description, price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
+    addItem({ name: p.name, description: '', price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
     setShowProductSearch(false);
     setProductSearch('');
     setShowNameSuggestions(false);
@@ -162,7 +166,7 @@ export default function YeniTeklifPage() {
   const selectSuggestion = (p: any) => {
     const priceInTry = eurToTry(p.price);
     const costInTry = eurToTry(p.cost || 0);
-    addItem({ name: p.name, description: p.description || '', price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
+    addItem({ name: p.name, description: '', price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
     setShowNameSuggestions(false);
     setNameSuggestions([]);
     setNewItem({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
@@ -174,6 +178,32 @@ export default function YeniTeklifPage() {
     setCustomerCity(c.city);
     setCustomerAddress(c.address);
     setShowCustomerPicker(false);
+  };
+
+  // Yeni ürün oluştur ve kataloga kaydet
+  const saveNewProduct = () => {
+    if (!newProduct.name.trim()) return alert('Ürün adı zorunludur');
+    const price = parseFloat(newProduct.price) || 0;
+    const cost = parseFloat(newProduct.cost) || 0;
+    const product = {
+      id: `custom-${Date.now()}`,
+      brand_id: brandId,
+      name: newProduct.name.trim(),
+      description: '',
+      price,
+      cost,
+      image: newProduct.image.trim(),
+      product_link: newProduct.product_link.trim(),
+      category: newProduct.category.trim(),
+      currency: 'EUR',
+    };
+    addProduct(product);
+    // Aynı zamanda teklife de ekle (EUR -> TRY dönüşümü ile)
+    const priceInTry = eurToTry(price);
+    const costInTry = eurToTry(cost);
+    addItem({ name: product.name, description: '', price: priceInTry, cost: costInTry, image: product.image, product_link: product.product_link, quantity: 1 });
+    setNewProduct({ name: '', category: '', price: '', cost: '', image: '', product_link: '' });
+    setShowNewProductForm(false);
   };
 
   // Calculations
@@ -342,8 +372,14 @@ export default function YeniTeklifPage() {
                 {discountValue > 0 && <div className="flex justify-between text-red-600"><span>İndirim:</span><span>-{formatCurrency(discountValue, sym)}</span></div>}
                 {discountValue > 0 && <div className="flex justify-between border-t pt-1"><span className="text-gray-600">İndirimli Toplam:</span><span className="font-semibold">{formatCurrency(discountedSubTotal, sym)}</span></div>}
                 {includeVAT && <div className="flex justify-between"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>}
-                <div className="flex justify-between text-lg font-extrabold border-t-2 border-gray-800 pt-2 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
+                <div className="flex justify-between text-lg font-extrabold border-t-2 border-gray-800 pt-2 mt-2"><span>GENEL TOPLAM{!includeVAT ? ' (KDV Hariç)' : ''}:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
                 <div className="text-right text-xs text-gray-500 italic">{numberToText(finalTotal, currency)}</div>
+                {!includeVAT && (
+                  <div className="border-t border-dashed pt-2 mt-2 space-y-1">
+                    <div className="flex justify-between text-xs text-gray-500"><span>KDV (%20):</span><span>{formatCurrency(discountedSubTotal * 0.2, sym)}</span></div>
+                    <div className="flex justify-between text-sm font-bold text-gray-700"><span>KDV Dahil Toplam:</span><span>{formatCurrency(discountedSubTotal * 1.2, sym)}</span></div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -573,6 +609,61 @@ export default function YeniTeklifPage() {
         </div>
       </div>
 
+      {/* Yeni Ürün Oluştur ve Kaydet */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <button
+          onClick={() => setShowNewProductForm(!showNewProductForm)}
+          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition"
+        >
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-bold text-gray-700 uppercase">Yeni Ürün Oluştur ve Kaydet</span>
+            <span className="text-xs text-gray-400">Katalogda olmayan ürünleri sisteme kaydedin</span>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showNewProductForm ? 'rotate-180' : ''}`} />
+        </button>
+        {showNewProductForm && (
+          <div className="px-5 pb-5 border-t border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 mb-1">Ürün Adı *</label>
+                <input type="text" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="Ürün adı" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Kategori</label>
+                <input type="text" value={newProduct.category} onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="Ör: Fırınlar" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Fiyat (€ EUR)</label>
+                <input type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Maliyet (€ EUR)</label>
+                <input type="number" value={newProduct.cost} onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Görsel URL</label>
+                <input type="text" value={newProduct.image} onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="https://..." />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 mb-1">Ürün Linki</label>
+                <input type="text" value={newProduct.product_link} onChange={(e) => setNewProduct({ ...newProduct, product_link: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="https://..." />
+              </div>
+              <div className="flex items-end">
+                <button onClick={saveNewProduct} className="w-full py-2 rounded-lg text-white text-sm font-bold flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
+                  <Save className="w-4 h-4" /> Kaydet ve Ekle
+                </button>
+              </div>
+            </div>
+            {newProduct.price && (
+              <div className="mt-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+                €{parseFloat(newProduct.price).toLocaleString('tr-TR')} × {eurRate} = <span className="font-bold text-gray-900">₺{eurToTry(parseFloat(newProduct.price) || 0).toLocaleString('tr-TR')}</span> (TL karşılığı)
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Items Table */}
       {items.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
@@ -690,8 +781,14 @@ export default function YeniTeklifPage() {
             </div>
             {discountValue > 0 && <div className="flex justify-between text-sm border-t border-dashed pt-2"><span className="text-gray-600">İndirimli Ara Toplam:</span><span className="font-semibold">{formatCurrency(discountedSubTotal, sym)}</span></div>}
             {includeVAT && <div className="flex justify-between text-sm"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>}
-            <div className="flex justify-between text-xl font-extrabold text-gray-900 border-t-2 border-gray-800 pt-3 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
+            <div className="flex justify-between text-xl font-extrabold text-gray-900 border-t-2 border-gray-800 pt-3 mt-2"><span>GENEL TOPLAM{!includeVAT ? ' (KDV Hariç)' : ''}:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
             <div className="text-right text-xs text-gray-500 italic">{numberToText(finalTotal, currency)}</div>
+            {!includeVAT && (
+              <div className="border-t border-dashed pt-2 mt-1 space-y-1">
+                <div className="flex justify-between text-xs text-gray-400"><span>KDV (%20):</span><span>{formatCurrency(discountedSubTotal * 0.2, sym)}</span></div>
+                <div className="flex justify-between text-sm font-semibold text-gray-600"><span>KDV Dahil Toplam:</span><span>{formatCurrency(discountedSubTotal * 1.2, sym)}</span></div>
+              </div>
+            )}
           </div>
         </div>
       )}
