@@ -1,0 +1,408 @@
+'use client';
+
+import { useParams } from 'next/navigation';
+import { useAppStore } from '@/lib/store';
+import { getBrand } from '@/lib/brands';
+import { Search, Plus, Trash2, Edit2, X, Save, Package, FileSpreadsheet, ChevronLeft, ChevronRight, Filter, Tag } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import type { Product } from '@/lib/types';
+
+const ITEMS_PER_PAGE = 50;
+
+export default function UrunlerPage() {
+  const params = useParams();
+  const brandId = params.brand as string;
+  const brand = getBrand(brandId);
+  const { products, addProduct, removeProduct, setProducts } = useAppStore();
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedManufacturer, setSelectedManufacturer] = useState('');
+  const [page, setPage] = useState(1);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState({ name: '', description: '', price: '', cost: '', image: '', product_link: '', category: '', currency: 'TRY' });
+
+  const allBrandProducts = products.filter((p) => p.brand_id === brandId);
+
+  // Extract unique categories (top-level)
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    allBrandProducts.forEach((p) => {
+      const cat = (p.category || '').split('>')[0].trim();
+      if (cat) cats.add(cat);
+    });
+    return Array.from(cats).sort();
+  }, [allBrandProducts]);
+
+  // Extract unique manufacturers
+  const manufacturers = useMemo(() => {
+    const mfrs = new Set<string>();
+    allBrandProducts.forEach((p) => {
+      const mfr = (p as any).manufacturer;
+      if (mfr) mfrs.add(mfr);
+    });
+    return Array.from(mfrs).sort();
+  }, [allBrandProducts]);
+
+  // Filter products
+  const filteredProducts = useMemo(() => {
+    return allBrandProducts.filter((p) => {
+      if (search) {
+        const s = search.toLowerCase();
+        const matchName = p.name.toLowerCase().includes(s);
+        const matchCat = (p.category || '').toLowerCase().includes(s);
+        const matchSku = ((p as any).sku || '').toLowerCase().includes(s);
+        const matchMfr = ((p as any).manufacturer || '').toLowerCase().includes(s);
+        if (!matchName && !matchCat && !matchSku && !matchMfr) return false;
+      }
+      if (selectedCategory) {
+        const topCat = (p.category || '').split('>')[0].trim();
+        if (topCat !== selectedCategory) return false;
+      }
+      if (selectedManufacturer) {
+        if ((p as any).manufacturer !== selectedManufacturer) return false;
+      }
+      return true;
+    });
+  }, [allBrandProducts, search, selectedCategory, selectedManufacturer]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const pagedProducts = filteredProducts.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
+
+  const resetFilters = () => {
+    setSearch('');
+    setSelectedCategory('');
+    setSelectedManufacturer('');
+    setPage(1);
+  };
+
+  const handleSave = () => {
+    if (!form.name.trim()) return alert('Ürün adı giriniz.');
+    if (editingId) {
+      setProducts(products.map((p) => p.id === editingId ? { ...p, ...form, price: parseFloat(form.price) || 0, cost: parseFloat(form.cost) || 0 } : p));
+      setEditingId(null);
+    } else {
+      const newProduct: Product = {
+        id: Date.now().toString(),
+        brand_id: brandId,
+        name: form.name,
+        description: form.description,
+        price: parseFloat(form.price) || 0,
+        cost: parseFloat(form.cost) || 0,
+        image: form.image,
+        product_link: form.product_link,
+        category: form.category,
+        currency: form.currency,
+      };
+      addProduct(newProduct);
+    }
+    setForm({ name: '', description: '', price: '', cost: '', image: '', product_link: '', category: '', currency: 'TRY' });
+    setShowForm(false);
+  };
+
+  const handleEdit = (p: Product) => {
+    setEditingId(p.id);
+    setForm({ name: p.name, description: p.description, price: p.price.toString(), cost: p.cost.toString(), image: p.image, product_link: p.product_link, category: p.category, currency: p.currency });
+    setShowForm(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) removeProduct(id);
+  };
+
+  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const Papa = (await import('papaparse')).default;
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const newProducts: Product[] = [];
+          results.data.forEach((row: any) => {
+            const name = row['Ürün Adı'] || row['name'] || row['Name'] || row['urun_adi'] || '';
+            if (!name) return;
+            newProducts.push({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+              brand_id: brandId,
+              name,
+              description: row['Açıklama'] || row['description'] || row['Description'] || '',
+              price: parseFloat(row['Fiyat'] || row['price'] || row['Price'] || '0') || 0,
+              cost: parseFloat(row['Maliyet'] || row['cost'] || row['Cost'] || '0') || 0,
+              image: row['Görsel'] || row['image'] || row['Image'] || row['Görsel URL'] || '',
+              product_link: row['Link'] || row['url'] || row['URL'] || row['Ürün Linki'] || '',
+              category: row['Kategori'] || row['category'] || row['Category'] || '',
+              currency: row['Para Birimi'] || row['currency'] || 'TRY',
+            });
+          });
+          if (newProducts.length > 0) {
+            if (confirm(`${newProducts.length} ürün bulundu. Eklemek istiyor musunuz?`)) {
+              setProducts([...products, ...newProducts]);
+              alert(`${newProducts.length} ürün başarıyla eklendi!`);
+            }
+          } else {
+            alert('CSV dosyasında uygun veri bulunamadı. Sütun başlıklarını kontrol edin.');
+          }
+        },
+        error: () => alert('CSV dosyası okunurken hata oluştu.'),
+      });
+    } catch {
+      alert('CSV işleme hatası.');
+    }
+    e.target.value = '';
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Ürün Yönetimi</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {brand.fullName} — <strong>{allBrandProducts.length.toLocaleString('tr-TR')}</strong> toplam ürün
+            {filteredProducts.length !== allBrandProducts.length && (
+              <span className="text-blue-600"> • {filteredProducts.length.toLocaleString('tr-TR')} sonuç</span>
+            )}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <input type="file" ref={fileInputRef} accept=".csv,.txt" onChange={handleCSVUpload} className="hidden" />
+          <button onClick={() => fileInputRef.current?.click()} className="bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center gap-2">
+            <FileSpreadsheet className="w-4 h-4" /> CSV Yükle
+          </button>
+          <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: '', description: '', price: '', cost: '', image: '', product_link: '', category: '', currency: 'TRY' }); }}
+            className={`${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2`}>
+            <Plus className="w-4 h-4" /> Yeni Ürün
+          </button>
+        </div>
+      </div>
+
+      {/* Filters Row */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Ürün adı, SKU veya marka ara..."
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          />
+        </div>
+
+        {categories.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <select
+              value={selectedCategory}
+              onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
+              className="p-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[180px]"
+            >
+              <option value="">Tüm Kategoriler</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {manufacturers.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Tag className="w-4 h-4 text-gray-400" />
+            <select
+              value={selectedManufacturer}
+              onChange={(e) => { setSelectedManufacturer(e.target.value); setPage(1); }}
+              className="p-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[150px]"
+            >
+              <option value="">Tüm Markalar</option>
+              {manufacturers.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {(search || selectedCategory || selectedManufacturer) && (
+          <button onClick={resetFilters} className="text-xs text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded hover:bg-red-50 transition">
+            ✕ Filtreleri Temizle
+          </button>
+        )}
+      </div>
+
+      {/* Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white">
+              <h3 className="font-bold text-lg">{editingId ? 'Ürün Düzenle' : 'Yeni Ürün'}</h3>
+              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Ürün Adı *</label>
+                <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="Ürün adı" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Açıklama</label>
+                <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="Açıklama" />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-red-600 mb-1">Fiyat</label>
+                  <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="0.00" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Maliyet</label>
+                  <input type="number" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="0.00" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Para Birimi</label>
+                  <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm">
+                    <option value="TRY">TL (₺)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Görsel URL</label>
+                <input type="text" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="https://..." />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Ürün Linki</label>
+                <input type="text" value={form.product_link} onChange={(e) => setForm({ ...form, product_link: e.target.value })} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="https://..." />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Kategori</label>
+                <input type="text" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="Kategori" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50">İptal</button>
+                <button onClick={handleSave} className={`px-4 py-2 rounded-lg text-white text-sm font-bold hover:opacity-90 ${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} flex items-center gap-2`}>
+                  <Save className="w-4 h-4" /> Kaydet
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product Table */}
+      {filteredProducts.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <Package className="w-12 h-12 mx-auto mb-4 opacity-30" />
+          <p className="text-lg font-medium">
+            {allBrandProducts.length === 0 ? 'Henüz ürün eklenmemiş' : 'Aramanıza uygun ürün bulunamadı'}
+          </p>
+          <p className="text-sm mt-1">
+            {allBrandProducts.length === 0 ? 'CSV yükleyerek veya manuel ekleyerek başlayın' : 'Filtreleri değiştirmeyi deneyin'}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase">
+                  <th className="py-3 px-3 w-14">Görsel</th>
+                  <th className="py-3 px-3">Ürün Adı</th>
+                  <th className="py-3 px-3 hidden lg:table-cell">Marka</th>
+                  <th className="py-3 px-3 hidden md:table-cell">Kategori</th>
+                  <th className="py-3 px-3 text-right w-24">Fiyat</th>
+                  <th className="py-3 px-3 text-center w-20">İşlem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedProducts.map((p) => (
+                  <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                    <td className="py-2 px-3">
+                      <div className="w-10 h-10 rounded border bg-gray-50 overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {p.image ? (
+                          <img src={p.image} alt="" className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        ) : (
+                          <Package className="w-4 h-4 text-gray-300" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="font-semibold text-gray-900 line-clamp-1">{p.name}</div>
+                      {p.description && <div className="text-xs text-gray-400 line-clamp-1 max-w-md">{p.description}</div>}
+                      {(p as any).sku && <div className="text-[10px] text-gray-400 font-mono">SKU: {(p as any).sku}</div>}
+                    </td>
+                    <td className="py-2 px-3 hidden lg:table-cell">
+                      <span className="text-xs text-gray-500">{(p as any).manufacturer || '-'}</span>
+                    </td>
+                    <td className="py-2 px-3 hidden md:table-cell">
+                      <span className="text-xs text-gray-500 line-clamp-1">{p.category || '-'}</span>
+                    </td>
+                    <td className="py-2 px-3 text-right font-bold text-gray-900 whitespace-nowrap">₺{p.price.toLocaleString('tr-TR')}</td>
+                    <td className="py-2 px-3 text-center">
+                      <div className="flex justify-center gap-0.5">
+                        <button onClick={() => handleEdit(p)} className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition"><Edit2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
+              <div className="text-xs text-gray-500">
+                Sayfa <strong>{safePage}</strong> / {totalPages} — {filteredProducts.length.toLocaleString('tr-TR')} ürün
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(Math.max(1, safePage - 1))}
+                  disabled={safePage <= 1}
+                  className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 7) {
+                    pageNum = i + 1;
+                  } else if (safePage <= 4) {
+                    pageNum = i + 1;
+                  } else if (safePage >= totalPages - 3) {
+                    pageNum = totalPages - 6 + i;
+                  } else {
+                    pageNum = safePage - 3 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`w-8 h-8 rounded-lg text-xs font-bold transition ${
+                        pageNum === safePage
+                          ? `${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white`
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                  disabled={safePage >= totalPages}
+                  className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,96 @@
+export const formatCurrency = (amount: number, symbol: string = '₺'): string => {
+  if (isNaN(amount)) return `${symbol}0,00`;
+  return `${symbol}${amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+export const getCurrencySymbol = (currency: string): string => {
+  const symbols: Record<string, string> = { TRY: '₺', USD: '$', EUR: '€', GBP: '£' };
+  return symbols[currency] || '₺';
+};
+
+export const numberToText = (num: number, currency: string = 'TRY', lang: string = 'tr'): string => {
+  if (isNaN(num) || num === 0) return '';
+  const ones = ['', 'Bir', 'İki', 'Üç', 'Dört', 'Beş', 'Altı', 'Yedi', 'Sekiz', 'Dokuz'];
+  const tens = ['', 'On', 'Yirmi', 'Otuz', 'Kırk', 'Elli', 'Altmış', 'Yetmiş', 'Seksen', 'Doksan'];
+  const scales = ['', 'Bin', 'Milyon', 'Milyar'];
+
+  const currNames: Record<string, string> = { TRY: 'Türk Lirası', USD: 'Amerikan Doları', EUR: 'Euro', GBP: 'İngiliz Sterlini' };
+  const intPart = Math.floor(num);
+  const decPart = Math.round((num - intPart) * 100);
+
+  const convertHundreds = (n: number): string => {
+    let result = '';
+    if (n >= 100) { result += (n >= 200 ? ones[Math.floor(n / 100)] : '') + 'Yüz'; n %= 100; }
+    if (n >= 10) { result += tens[Math.floor(n / 10)]; n %= 10; }
+    if (n > 0) result += ones[n];
+    return result;
+  };
+
+  if (intPart === 0) return `Sıfır ${currNames[currency] || 'TL'}`;
+
+  let text = '';
+  let remaining = intPart;
+  let scaleIndex = 0;
+  while (remaining > 0) {
+    const chunk = remaining % 1000;
+    if (chunk > 0) {
+      const chunkText = (scaleIndex === 1 && chunk === 1) ? '' : convertHundreds(chunk);
+      text = chunkText + scales[scaleIndex] + text;
+    }
+    remaining = Math.floor(remaining / 1000);
+    scaleIndex++;
+  }
+
+  text += ` ${currNames[currency] || 'TL'}`;
+  if (decPart > 0) text += ` ${convertHundreds(decPart)} Kuruş`;
+  return text;
+};
+
+export const generateProposalNo = (brandId: string): string => {
+  const prefix = brandId === 'mutpro' ? 'MP' : 'GM';
+  const now = new Date();
+  const year = now.getFullYear().toString().slice(-2);
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${prefix}-${year}${month}-${rand}`;
+};
+
+export const getValidityDate = (): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + 15);
+  return d.toLocaleDateString('tr-TR');
+};
+
+export const getTodayDate = (): string => {
+  return new Date().toLocaleDateString('tr-TR');
+};
+
+export const fetchExchangeRates = async (): Promise<{ usd: number; eur: number; gbp: number }> => {
+  try {
+    // TCMB XML API - güncel döviz kurları
+    const res = await fetch('/api/tcmb-kur');
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    return {
+      usd: data.usd || 38,
+      eur: data.eur || 41,
+      gbp: data.gbp || 48,
+    };
+  } catch {
+    // Fallback: alternatif API
+    try {
+      const res2 = await fetch('https://api.exchangerate-data.com/latest?base=USD');
+      if (!res2.ok) throw new Error('Fallback API error');
+      const data2 = await res2.json();
+      const tryRate = data2.rates?.TRY || 38;
+      const eurRate = data2.rates?.EUR || 0.92;
+      return {
+        usd: tryRate,
+        eur: tryRate / eurRate,
+        gbp: tryRate / (data2.rates?.GBP || 0.78),
+      };
+    } catch {
+      return { usd: 38, eur: 41, gbp: 48 };
+    }
+  }
+};
