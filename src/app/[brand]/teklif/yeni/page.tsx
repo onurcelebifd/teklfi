@@ -713,15 +713,17 @@ export default function YeniTeklifPage() {
                       <input type="number" value={item.quantity} onChange={(e) => updateItem(item.id, 'quantity', e.target.value)} className="w-12 text-center bg-transparent font-semibold" min="1" />
                     </td>
                     <td className="py-3 px-2 text-right">
-                      <div className="text-base font-bold text-gray-800">{formatCurrency(unitPrice, sym)}</div>
-                      <div className="flex items-center gap-1 mt-1 justify-end">
-                        <span className="text-[10px] text-gray-400">Liste:</span>
-                        <input type="number" value={item.price} onChange={(e) => updateItem(item.id, 'price', e.target.value)} className="w-16 text-right text-xs border-b border-gray-200 outline-none text-gray-500" />
+                      <div className="flex items-center gap-1 justify-end">
+                        <span className="text-xs text-gray-400">₺</span>
+                        <input type="number" value={item.price} onChange={(e) => updateItem(item.id, 'price', e.target.value)} className="w-28 text-right text-base font-bold text-gray-800 bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 outline-none transition" />
                       </div>
-                      <div className="flex items-center gap-1 mt-0.5 justify-end">
+                      <div className="flex items-center gap-1 mt-1 justify-end">
                         <span className="text-[10px] text-red-400">İnd%:</span>
                         <input type="number" value={item.item_discount} onChange={(e) => updateItem(item.id, 'item_discount', e.target.value)} className="w-10 text-right text-xs border-b border-gray-200 outline-none text-red-500 font-bold" placeholder="0" />
                       </div>
+                      {item.item_discount > 0 && (
+                        <div className="text-[10px] text-gray-400 mt-0.5">Net: {formatCurrency(unitPrice, sym)}</div>
+                      )}
                     </td>
                     <td className="py-3 px-2 text-right bg-orange-50/50">
                       <div className={`text-xs font-bold ${itemProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(itemProfit, sym)}</div>
