@@ -39,11 +39,7 @@ export const BRANDS: Record<string, BrandConfig> = {
     website: 'www.mutpro.com',
     qrUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://www.mutpro.com',
     slogan: 'ENDÜSTRİYEL MUTFAK EKİPMANLARI',
-    brandLogos: [
-      'https://www.oztiryakiler.com.tr/images/oztiryakiler-logo.png',
-      'https://ugfryer.com/wp-content/uploads/2023/01/ug-logo.png',
-      'https://dfryer.com.tr/wp-content/uploads/2023/01/logo.png',
-    ],
+    brandLogos: [],
   },
   guclumutfak: {
     id: 'guclumutfak',

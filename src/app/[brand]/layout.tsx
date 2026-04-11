@@ -43,9 +43,9 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
-                src={brand.logo}
+                src={brand.id === 'mutpro' ? '/logos/mutpro-logo-white.svg' : brand.logo}
                 alt={brand.name}
-                className="h-8 object-contain brightness-200"
+                className="h-8 object-contain"
                 onError={(e) => {
                   const t = e.target as HTMLImageElement;
                   t.style.display = 'none';
