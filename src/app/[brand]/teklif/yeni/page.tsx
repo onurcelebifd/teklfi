@@ -385,7 +385,6 @@ export default function YeniTeklifPage() {
                       <td className="py-3 px-2">
                         <div className="font-medium text-gray-900">{item.name}</div>
                         {item.description && <div className="text-xs text-gray-500 italic mt-0.5">{item.description}</div>}
-                        {item.product_link && <a href={item.product_link} target="_blank" className="text-xs text-blue-500 underline mt-0.5 inline-block">Ürün Linki</a>}
                       </td>
                       <td className="py-3 px-2 text-center font-semibold">{item.quantity}</td>
                       {!isHidden && <td className="py-3 px-2 text-right font-bold">{formatCurrency(netUnitPrice, sym)}</td>}
