@@ -30,9 +30,9 @@ export default function HomePage() {
               onClick={() => handleBrandSelect(brand.id)}
               className="group relative bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] p-8 flex flex-col items-center gap-6 border border-gray-100"
             >
-              <div className={`w-full h-32 flex items-center justify-center rounded-xl ${brand.id === 'mutpro' ? 'bg-orange-500 p-4' : ''}`}>
+              <div className={`w-full h-32 flex items-center justify-center rounded-xl ${brand.id === 'mutpro' ? 'bg-white p-4 border border-gray-100' : ''}`}>
                 <img
-                  src={brand.id === 'mutpro' ? '/logos/mutpro-logo-white.svg' : brand.logo}
+                  src={brand.logo}
                   alt={brand.name}
                   className="max-h-full max-w-[280px] object-contain"
                   onError={(e) => {
