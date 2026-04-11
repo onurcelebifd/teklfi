@@ -369,7 +369,7 @@ export default function YeniTeklifPage() {
           {/* Header */}
           <div className={`flex justify-between items-start mb-6 pb-4 border-b-2 ${brand.id === 'mutpro' ? 'border-[#040023]' : 'border-red-600'}`}>
             <div>
-              <img src={brand.logo} alt={brand.name} className="h-24 object-contain mb-1" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <img src={brand.logo} alt={brand.name} className="h-[120px] object-contain mb-1" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               <div className="text-[10px] text-gray-500 space-y-0.5 mt-1 leading-tight">
                 {brand.address.map((line, i) => <div key={i}>{line}</div>)}
                 <div>{brand.phone} • {brand.email}</div>
@@ -467,14 +467,14 @@ export default function YeniTeklifPage() {
               <div className="whitespace-pre-wrap leading-relaxed">{conditions}</div>
             </div>
             <div className="text-right">
-              <p className="font-bold text-gray-900 text-sm">{brand.fullName}</p>
-              <p className="text-[10px]">{brand.slogan}</p>
               {preparedBy && (
-                <div className="mt-3 pt-2 border-t border-gray-200">
+                <div className="mb-3 pb-2 border-b border-gray-200">
                   <p className="text-[10px] text-gray-400 uppercase">Teklifi Hazırlayan</p>
                   <p className="text-xs font-bold text-gray-800">{preparedBy}</p>
                 </div>
               )}
+              <p className="font-bold text-gray-900 text-sm">{brand.fullName}</p>
+              <p className="text-[10px]">{brand.slogan}</p>
               <div className="mt-2 flex justify-end"><img src={brand.qrUrl} alt="QR" className="w-12 h-12" crossOrigin="anonymous" /></div>
             </div>
           </div>
