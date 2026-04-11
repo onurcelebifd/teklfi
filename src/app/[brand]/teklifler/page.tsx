@@ -3,9 +3,9 @@
 import { useParams } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { getBrand } from '@/lib/brands';
-import { Search, Trash2, Clock, CheckCircle, XCircle, Eye, Send } from 'lucide-react';
-import { useState } from 'react';
-import type { ProposalStatus } from '@/lib/types';
+import { Search, Trash2, Clock, CheckCircle, XCircle, Eye, Send, Upload, UserCheck, Calendar, ChevronDown } from 'lucide-react';
+import { useState, useRef } from 'react';
+import type { ProposalStatus, Proposal } from '@/lib/types';
 import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types';
 import Link from 'next/link';
 
@@ -13,20 +13,32 @@ export default function TekliflerPage() {
   const params = useParams();
   const brandId = params.brand as string;
   const brand = getBrand(brandId);
-  const { proposals, updateProposal, removeProposal } = useAppStore();
+  const { proposals, addProposal, updateProposal, removeProposal } = useAppStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [preparedByFilter, setPreparedByFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [showUpload, setShowUpload] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Tüm hazırlayan kişileri bul (benzersiz)
+  const allPreparedBy = Array.from(new Set(
+    proposals.filter(p => p.brand_id === brandId && p.prepared_by).map(p => p.prepared_by)
+  ));
 
   const brandProposals = proposals
     .filter((p) => p.brand_id === brandId)
     .filter((p) => {
       if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+      if (preparedByFilter && (p.prepared_by || '') !== preparedByFilter) return false;
+      if (dateFilter && (p.proposal_date || '') !== dateFilter) return false;
       if (!search) return true;
       const s = search.toLowerCase();
       return (
         (p.project_name || '').toLowerCase().includes(s) ||
         (p.customer_name || '').toLowerCase().includes(s) ||
-        (p.proposal_no || '').toLowerCase().includes(s)
+        (p.proposal_no || '').toLowerCase().includes(s) ||
+        (p.prepared_by || '').toLowerCase().includes(s)
       );
     });
 
@@ -40,6 +52,92 @@ export default function TekliflerPage() {
     updateProposal(id, { status });
   };
 
+  // Eski teklifleri Excel'den içe aktar
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const ext = file.name.split('.').pop()?.toLowerCase();
+
+    if (ext === 'xlsx' || ext === 'xls') {
+      try {
+        const XLSX = await import('xlsx');
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+
+        let imported = 0;
+        for (const row of rows) {
+          const proposal: Proposal = {
+            id: `import-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            brand_id: brandId,
+            proposal_no: row['Teklif No'] || row['proposal_no'] || `IMP-${Date.now()}`,
+            proposal_date: row['Tarih'] || row['proposal_date'] || new Date().toLocaleDateString('tr-TR'),
+            project_name: row['Proje'] || row['project_name'] || '',
+            customer_name: row['Müşteri'] || row['customer_name'] || '',
+            customer_phone: row['Telefon'] || row['customer_phone'] || '',
+            customer_city: row['Şehir'] || row['customer_city'] || '',
+            customer_address: row['Adres'] || row['customer_address'] || '',
+            prepared_by: row['Hazırlayan'] || row['prepared_by'] || '',
+            items: [],
+            discount_value: 0,
+            currency: 'TRY',
+            include_vat: true,
+            conditions: '',
+            global_hide_prices: false,
+            status: 'approved',
+            total: parseFloat(row['Toplam'] || row['total'] || '0') || 0,
+          };
+          addProposal(proposal);
+          imported++;
+        }
+        alert(`${imported} teklif başarıyla içe aktarıldı!`);
+      } catch {
+        alert('Excel dosyası okunurken hata oluştu.');
+      }
+    } else if (ext === 'csv') {
+      try {
+        const Papa = await import('papaparse');
+        const text = await file.text();
+        const result = Papa.default.parse(text, { header: true });
+        let imported = 0;
+        for (const row of result.data as any[]) {
+          if (!row['Teklif No'] && !row['proposal_no'] && !row['Müşteri'] && !row['customer_name']) continue;
+          const proposal: Proposal = {
+            id: `import-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            brand_id: brandId,
+            proposal_no: row['Teklif No'] || row['proposal_no'] || `IMP-${Date.now()}`,
+            proposal_date: row['Tarih'] || row['proposal_date'] || new Date().toLocaleDateString('tr-TR'),
+            project_name: row['Proje'] || row['project_name'] || '',
+            customer_name: row['Müşteri'] || row['customer_name'] || '',
+            customer_phone: row['Telefon'] || row['customer_phone'] || '',
+            customer_city: row['Şehir'] || row['customer_city'] || '',
+            customer_address: row['Adres'] || row['customer_address'] || '',
+            prepared_by: row['Hazırlayan'] || row['prepared_by'] || '',
+            items: [],
+            discount_value: 0,
+            currency: 'TRY',
+            include_vat: true,
+            conditions: '',
+            global_hide_prices: false,
+            status: 'approved',
+            total: parseFloat(row['Toplam'] || row['total'] || '0') || 0,
+          };
+          addProposal(proposal);
+          imported++;
+        }
+        alert(`${imported} teklif başarıyla içe aktarıldı!`);
+      } catch {
+        alert('CSV dosyası okunurken hata oluştu.');
+      }
+    } else {
+      alert('Desteklenen formatlar: .xlsx, .xls, .csv');
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const statuses: { value: string; label: string }[] = [
     { value: 'all', label: 'Tümü' },
     { value: 'draft', label: 'Taslak' },
@@ -51,22 +149,84 @@ export default function TekliflerPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Teklif Geçmişi</h1>
-        <p className="text-sm text-gray-500 mt-1">{brand.fullName} - Tüm teklifleri yönetin</p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Teklif Geçmişi</h1>
+          <p className="text-sm text-gray-500 mt-1">{brand.fullName} - Tüm teklifleri yönetin</p>
+        </div>
+        <button
+          onClick={() => setShowUpload(!showUpload)}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-lg bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition"
+        >
+          <Upload className="w-4 h-4" /> Eski Teklif İçe Aktar
+        </button>
       </div>
 
+      {/* Upload Panel */}
+      {showUpload && (
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-purple-800 mb-2">Geçmiş Teklifleri İçe Aktar</h3>
+          <p className="text-xs text-purple-600 mb-3">
+            Excel (.xlsx, .xls) veya CSV dosyası yükleyin. Dosya başlıkları: Teklif No, Tarih, Proje, Müşteri, Telefon, Şehir, Adres, Hazırlayan, Toplam
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileUpload}
+              className="text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Proje adı, müşteri veya teklif no ara..."
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Proje adı, müşteri, teklif no veya hazırlayan ara..."
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          {/* Hazırlayan Filtresi */}
+          {allPreparedBy.length > 0 && (
+            <div className="flex items-center gap-1">
+              <UserCheck className="w-4 h-4 text-gray-400" />
+              <select
+                value={preparedByFilter}
+                onChange={(e) => setPreparedByFilter(e.target.value)}
+                className="p-2 border border-gray-300 rounded-lg text-sm outline-none"
+              >
+                <option value="">Tüm Hazırlayanlar</option>
+                {allPreparedBy.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {/* Tarih Filtresi */}
+          <div className="flex items-center gap-1">
+            <Calendar className="w-4 h-4 text-gray-400" />
+            <input
+              type="date"
+              value={dateFilter ? dateFilter.split('.').reverse().join('-') : ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  const [y, m, d] = e.target.value.split('-');
+                  setDateFilter(`${d}.${m}.${y}`);
+                } else {
+                  setDateFilter('');
+                }
+              }}
+              className="p-2 border border-gray-300 rounded-lg text-sm outline-none"
+            />
+          </div>
         </div>
         <div className="flex gap-1 flex-wrap">
           {statuses.map((s) => (
@@ -82,6 +242,14 @@ export default function TekliflerPage() {
               {s.label}
             </button>
           ))}
+          {(preparedByFilter || dateFilter) && (
+            <button
+              onClick={() => { setPreparedByFilter(''); setDateFilter(''); }}
+              className="px-3 py-2 rounded-lg text-xs font-bold border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+            >
+              Filtreleri Temizle
+            </button>
+          )}
         </div>
       </div>
 
@@ -97,6 +265,7 @@ export default function TekliflerPage() {
         </div>
       ) : (
         <div className="space-y-3">
+          <div className="text-xs text-gray-400 font-medium">{brandProposals.length} teklif bulundu</div>
           {brandProposals.map((p) => (
             <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -113,6 +282,14 @@ export default function TekliflerPage() {
                     <span>{p.proposal_no}</span>
                     <span className="mx-2">•</span>
                     <span>{p.proposal_date}</span>
+                    {p.prepared_by && (
+                      <>
+                        <span className="mx-2">•</span>
+                        <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">
+                          <UserCheck className="w-3 h-3" /> {p.prepared_by}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
 

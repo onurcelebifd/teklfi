@@ -57,8 +57,14 @@ export const generateProposalNo = (brandId: string): string => {
 
 export const getValidityDate = (): string => {
   const d = new Date();
-  d.setDate(d.getDate() + 15);
+  d.setDate(d.getDate() + 3);
   return d.toLocaleDateString('tr-TR');
+};
+
+export const getValidityText = (): string => {
+  const today = new Date().toLocaleDateString('tr-TR');
+  const expiry = getValidityDate();
+  return `İşbu teklif ${today} tarihinde hazırlanmış olup, 3 gün (Sona Erme: ${expiry}) süreyle geçerlidir.`;
 };
 
 export const getTodayDate = (): string => {

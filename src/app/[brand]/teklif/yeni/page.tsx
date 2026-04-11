@@ -4,11 +4,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { getBrand } from '@/lib/brands';
-import { formatCurrency, getCurrencySymbol, numberToText, generateProposalNo, getTodayDate, getValidityDate } from '@/lib/helpers';
+import { formatCurrency, getCurrencySymbol, numberToText, generateProposalNo, getTodayDate, getValidityDate, getValidityText } from '@/lib/helpers';
 import type { ProposalItem, Proposal } from '@/lib/types';
 import {
   Plus, Trash2, Copy, GripVertical, Eye, EyeOff, Truck, Save, FileDown,
-  Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw, Package
+  Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw, Package, UserCheck, AlertCircle
 } from 'lucide-react';
 
 export default function YeniTeklifPage() {
@@ -45,10 +45,11 @@ export default function YeniTeklifPage() {
   const [currency, setCurrency] = useState('TRY');
   const [inputCurrency] = useState('EUR'); // Ürünler EUR bazlı gelir
   const [discountValue, setDiscountValue] = useState(0);
-  const [includeVAT, setIncludeVAT] = useState(false);
+  const [includeVAT] = useState(true); // KDV her zaman dahil mantığı
   const [globalHidePrices, setGlobalHidePrices] = useState(false);
+  const [preparedBy, setPreparedBy] = useState('');
   const [conditions, setConditions] = useState(
-    `• Geçerlilik süresi: ${getValidityDate()} tarihine kadardır.\n• Ödeme: Sipariş ile birlikte.\n• Teslimat: Stok durumuna göre 1-4 hafta.\n• Fiyatlara KDV dahil değildir.\n• Nakliye alıcıya aittir.`
+    `• ${getValidityText()}\n• Ödeme: Sipariş ile birlikte.\n• Teslimat: Stok durumuna göre 1-4 hafta.\n• Fiyatlara KDV dahil değildir.\n• Nakliye alıcıya aittir.`
   );
   const [isPrintMode, setIsPrintMode] = useState(false);
   const [isCompactMode, setIsCompactMode] = useState(false);
@@ -206,11 +207,14 @@ export default function YeniTeklifPage() {
     setShowNewProductForm(false);
   };
 
-  // Calculations
-  const subTotal = items.reduce((sum, i) => sum + i.total, 0);
+  // Calculations — Girilen fiyatlar KDV dahil, /1.20 ile KDV hariç bulunur
+  const KDV_RATE = 0.20;
+  // items.total zaten brüt (KDV dahil) fiyat x adet
+  const brutTotal = items.reduce((sum, i) => sum + i.total, 0); // KDV dahil toplam
+  const subTotal = brutTotal / (1 + KDV_RATE); // KDV hariç ara toplam
   const discountedSubTotal = subTotal - discountValue;
-  const kdvTotal = includeVAT ? discountedSubTotal * 0.2 : 0;
-  const finalTotal = discountedSubTotal + kdvTotal;
+  const kdvTotal = discountedSubTotal * KDV_RATE;
+  const finalTotal = discountedSubTotal + kdvTotal; // Genel Toplam (KDV dahil)
   const totalCost = items.reduce((sum, i) => sum + i.cost * i.quantity, 0);
   const netProfit = discountedSubTotal - totalCost;
   const profitMargin = discountedSubTotal > 0 ? (netProfit / discountedSubTotal) * 100 : 0;
@@ -224,7 +228,10 @@ export default function YeniTeklifPage() {
     return amount;
   };
 
+  const isFormValid = preparedBy.trim().length > 0;
+
   const handleSave = () => {
+    if (!isFormValid) return alert('Teklifi Hazırlayan alanı zorunludur!');
     const proposal: Proposal = {
       id: Date.now().toString(),
       brand_id: brandId,
@@ -235,6 +242,7 @@ export default function YeniTeklifPage() {
       customer_phone: customerPhone,
       customer_city: customerCity,
       customer_address: customerAddress,
+      prepared_by: preparedBy.trim(),
       items,
       discount_value: discountValue,
       currency,
@@ -253,6 +261,7 @@ export default function YeniTeklifPage() {
 
   const handleDownloadPDF = async () => {
     if (!printRef.current) return;
+    if (!isFormValid) return alert('PDF oluşturmak için "Teklifi Hazırlayan" alanı zorunludur!');
     try {
       const html2pdf = (await import('html2pdf.js')).default;
       const opt = {
@@ -264,6 +273,29 @@ export default function YeniTeklifPage() {
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
       };
       await html2pdf().set(opt).from(printRef.current).save();
+
+      // PDF indirildiğinde otomatik olarak geçmişe kaydet
+      const proposal: Proposal = {
+        id: Date.now().toString(),
+        brand_id: brandId,
+        proposal_no: proposalNo,
+        proposal_date: proposalDate,
+        project_name: projectName,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_city: customerCity,
+        customer_address: customerAddress,
+        prepared_by: preparedBy.trim(),
+        items,
+        discount_value: discountValue,
+        currency,
+        include_vat: includeVAT,
+        conditions,
+        global_hide_prices: globalHidePrices,
+        status: 'sent',
+        total: finalTotal,
+      };
+      addProposal(proposal);
     } catch {
       alert('PDF oluşturulurken hata oluştu.');
     }
@@ -281,8 +313,9 @@ export default function YeniTeklifPage() {
           <button onClick={() => setIsPrintMode(false)} className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"><ArrowLeft className="w-4 h-4" /> Düzenlemeye Dön</button>
           <div className="flex-1" />
           <button onClick={handlePrint} className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><Printer className="w-4 h-4" /> Yazdır</button>
-          <button onClick={handleDownloadPDF} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><FileDown className="w-4 h-4" /> PDF İndir</button>
-          <button onClick={handleSave} className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><Save className="w-4 h-4" /> Kaydet</button>
+          <button onClick={handleDownloadPDF} disabled={!isFormValid} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 ${isFormValid ? 'bg-red-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}><FileDown className="w-4 h-4" /> PDF İndir</button>
+          <button onClick={handleSave} disabled={!isFormValid} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 ${isFormValid ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}><Save className="w-4 h-4" /> Kaydet</button>
+          {!isFormValid && <span className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Hazırlayan alanını doldurun</span>}
         </div>
 
         <div ref={printRef} className="bg-white p-6 rounded-xl shadow-lg page-container">
@@ -320,7 +353,7 @@ export default function YeniTeklifPage() {
             </div>
           </div>
 
-          {/* Items Table */}
+          {/* Items Table — Birim fiyatlar KDV hariç gösterilir */}
           {items.length > 0 && (
             <table className="w-full text-sm mb-8">
               <thead>
@@ -329,13 +362,15 @@ export default function YeniTeklifPage() {
                   {!isCompactMode && <th className="py-2 px-2 w-20">Görsel</th>}
                   <th className="py-2 px-2 text-left">Ürün</th>
                   <th className="py-2 px-2 text-center w-14">Adet</th>
-                  {!globalHidePrices && <th className="py-2 px-2 text-right w-28">Birim Fiyat</th>}
-                  {!globalHidePrices && <th className="py-2 px-2 text-right w-28">Toplam</th>}
+                  {!globalHidePrices && <th className="py-2 px-2 text-right w-28">Birim Fiyat (KDV Hariç)</th>}
+                  {!globalHidePrices && <th className="py-2 px-2 text-right w-28">Toplam (KDV Hariç)</th>}
                 </tr>
               </thead>
               <tbody>
                 {items.map((item, idx) => {
-                  const unitPrice = item.price * (1 - item.item_discount / 100);
+                  const brutUnitPrice = item.price * (1 - item.item_discount / 100);
+                  const netUnitPrice = brutUnitPrice / (1 + KDV_RATE);
+                  const netLineTotal = item.total / (1 + KDV_RATE);
                   const isHidden = globalHidePrices || item.hide_price;
                   return (
                     <tr key={item.id} className={`border-b border-gray-100 ${item.shipped ? 'line-through opacity-50' : ''}`}>
@@ -353,8 +388,8 @@ export default function YeniTeklifPage() {
                         {item.product_link && <a href={item.product_link} target="_blank" className="text-xs text-blue-500 underline mt-0.5 inline-block">Ürün Linki</a>}
                       </td>
                       <td className="py-3 px-2 text-center font-semibold">{item.quantity}</td>
-                      {!isHidden && <td className="py-3 px-2 text-right font-bold">{formatCurrency(unitPrice, sym)}</td>}
-                      {!isHidden && <td className="py-3 px-2 text-right font-bold">{formatCurrency(item.total, sym)}</td>}
+                      {!isHidden && <td className="py-3 px-2 text-right font-bold">{formatCurrency(netUnitPrice, sym)}</td>}
+                      {!isHidden && <td className="py-3 px-2 text-right font-bold">{formatCurrency(netLineTotal, sym)}</td>}
                       {isHidden && !globalHidePrices && <td className="py-3 px-2 text-center text-gray-400">-</td>}
                       {isHidden && !globalHidePrices && <td className="py-3 px-2 text-center text-gray-400">-</td>}
                     </tr>
@@ -364,32 +399,35 @@ export default function YeniTeklifPage() {
             </table>
           )}
 
-          {/* Totals */}
+          {/* Totals — KDV hariç ara toplam + KDV satırı + Genel Toplam */}
           {!globalHidePrices && (
             <div className="flex justify-end mb-8">
-              <div className="w-72 space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-600">Ara Toplam:</span><span className="font-semibold">{formatCurrency(subTotal, sym)}</span></div>
+              <div className="w-80 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-gray-600">Ara Toplam (KDV Hariç):</span><span className="font-semibold">{formatCurrency(subTotal, sym)}</span></div>
                 {discountValue > 0 && <div className="flex justify-between text-red-600"><span>İndirim:</span><span>-{formatCurrency(discountValue, sym)}</span></div>}
                 {discountValue > 0 && <div className="flex justify-between border-t pt-1"><span className="text-gray-600">İndirimli Toplam:</span><span className="font-semibold">{formatCurrency(discountedSubTotal, sym)}</span></div>}
-                {includeVAT && <div className="flex justify-between"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>}
-                <div className="flex justify-between text-lg font-extrabold border-t-2 border-gray-800 pt-2 mt-2"><span>GENEL TOPLAM{!includeVAT ? ' (KDV Hariç)' : ''}:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>
+                <div className="flex justify-between text-lg font-extrabold border-t-2 border-gray-800 pt-2 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
                 <div className="text-right text-xs text-gray-500 italic">{numberToText(finalTotal, currency)}</div>
-                {!includeVAT && (
-                  <div className="border-t border-dashed pt-2 mt-2 space-y-1">
-                    <div className="flex justify-between text-xs text-gray-500"><span>KDV (%20):</span><span>{formatCurrency(discountedSubTotal * 0.2, sym)}</span></div>
-                    <div className="flex justify-between text-sm font-bold text-gray-700"><span>KDV Dahil Toplam:</span><span>{formatCurrency(discountedSubTotal * 1.2, sym)}</span></div>
-                  </div>
-                )}
               </div>
             </div>
           )}
 
           {/* Terms + Footer */}
           <div className="grid grid-cols-2 gap-6 text-[10px] text-gray-500 border-t pt-4 mt-6">
-            <div><h4 className="font-bold text-gray-900 uppercase mb-1 text-xs">Şartlar ve Koşullar</h4><div className="whitespace-pre-wrap leading-relaxed">{conditions}</div></div>
+            <div>
+              <h4 className="font-bold text-gray-900 uppercase mb-1 text-xs">Şartlar ve Koşullar</h4>
+              <div className="whitespace-pre-wrap leading-relaxed">{conditions}</div>
+            </div>
             <div className="text-right">
               <p className="font-bold text-gray-900 text-sm">{brand.fullName}</p>
               <p className="text-[10px]">{brand.slogan}</p>
+              {preparedBy && (
+                <div className="mt-3 pt-2 border-t border-gray-200">
+                  <p className="text-[10px] text-gray-400 uppercase">Teklifi Hazırlayan</p>
+                  <p className="text-xs font-bold text-gray-800">{preparedBy}</p>
+                </div>
+              )}
               <div className="mt-2 flex justify-end"><img src={brand.qrUrl} alt="QR" className="w-12 h-12" crossOrigin="anonymous" /></div>
             </div>
           </div>
@@ -420,7 +458,7 @@ export default function YeniTeklifPage() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => setIsPrintMode(true)} className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-900"><Eye className="w-4 h-4" /> Önizle</button>
-          <button onClick={handleSave} className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-green-700"><Save className="w-4 h-4" /> Kaydet</button>
+          <button onClick={handleSave} disabled={!isFormValid} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 ${isFormValid ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}><Save className="w-4 h-4" /> Kaydet</button>
         </div>
       </div>
 
@@ -444,6 +482,27 @@ export default function YeniTeklifPage() {
             ))}
           </div>
         )}
+
+        {/* Teklifi Hazırlayan — Zorunlu Alan */}
+        <div className="mb-4">
+          <label className="block text-xs font-bold text-gray-500 mb-1 flex items-center gap-1">
+            <UserCheck className="w-3.5 h-3.5" /> Teklifi Hazırlayan *
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={preparedBy}
+              onChange={(e) => setPreparedBy(e.target.value)}
+              className={`w-full md:w-80 p-2 border rounded-lg text-sm font-semibold ${!preparedBy.trim() ? 'border-red-400 bg-red-50' : 'border-green-400 bg-green-50'}`}
+              placeholder="Adınızı yazın (zorunlu)"
+            />
+            {!preparedBy.trim() && (
+              <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
+                <AlertCircle className="w-3 h-3" /> Bu alan zorunludur — doldurmadan Kaydet ve PDF oluşturulamaz
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
@@ -472,10 +531,6 @@ export default function YeniTeklifPage() {
           <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="p-1.5 border border-gray-300 rounded-lg text-sm">
             <option value="TRY">TL (₺)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="GBP">GBP (£)</option>
           </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" checked={includeVAT} onChange={(e) => setIncludeVAT(e.target.checked)} className="accent-blue-600" />
-          <label className="text-xs font-bold text-gray-500">KDV Dahil</label>
         </div>
         <div className="flex items-center gap-2">
           <input type="checkbox" checked={isCompactMode} onChange={(e) => setIsCompactMode(e.target.checked)} className="accent-blue-600" />
@@ -773,7 +828,7 @@ export default function YeniTeklifPage() {
 
           {/* Totals Box */}
           <div className="w-full max-w-xs space-y-3">
-            <div className="flex justify-between text-sm text-gray-600"><span>Ara Toplam:</span><span className="font-semibold">{formatCurrency(subTotal, sym)}</span></div>
+            <div className="flex justify-between text-sm text-gray-600"><span>Ara Toplam (KDV Hariç):</span><span className="font-semibold">{formatCurrency(subTotal, sym)}</span></div>
             <div className="flex justify-between text-sm items-center">
               <span className="text-gray-600">Genel İndirim:</span>
               <div className="flex items-center gap-2">
@@ -782,15 +837,9 @@ export default function YeniTeklifPage() {
               </div>
             </div>
             {discountValue > 0 && <div className="flex justify-between text-sm border-t border-dashed pt-2"><span className="text-gray-600">İndirimli Ara Toplam:</span><span className="font-semibold">{formatCurrency(discountedSubTotal, sym)}</span></div>}
-            {includeVAT && <div className="flex justify-between text-sm"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>}
-            <div className="flex justify-between text-xl font-extrabold text-gray-900 border-t-2 border-gray-800 pt-3 mt-2"><span>GENEL TOPLAM{!includeVAT ? ' (KDV Hariç)' : ''}:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>
+            <div className="flex justify-between text-xl font-extrabold text-gray-900 border-t-2 border-gray-800 pt-3 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
             <div className="text-right text-xs text-gray-500 italic">{numberToText(finalTotal, currency)}</div>
-            {!includeVAT && (
-              <div className="border-t border-dashed pt-2 mt-1 space-y-1">
-                <div className="flex justify-between text-xs text-gray-400"><span>KDV (%20):</span><span>{formatCurrency(discountedSubTotal * 0.2, sym)}</span></div>
-                <div className="flex justify-between text-sm font-semibold text-gray-600"><span>KDV Dahil Toplam:</span><span>{formatCurrency(discountedSubTotal * 1.2, sym)}</span></div>
-              </div>
-            )}
           </div>
         </div>
       )}

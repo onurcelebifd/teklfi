@@ -51,6 +51,7 @@ export interface Proposal {
   customer_phone: string;
   customer_city: string;
   customer_address: string;
+  prepared_by: string;
   items: ProposalItem[];
   discount_value: number;
   currency: string;
