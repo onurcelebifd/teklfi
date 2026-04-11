@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Product, Customer, Proposal, PackageTemplate, ProposalItem } from './types';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 interface AppState {
   currentBrand: string;
@@ -20,12 +21,13 @@ interface AppState {
   addCustomer: (customer: Customer) => void;
   removeCustomer: (id: string) => void;
 
-  // Proposals (local cache)
+  // Proposals (synced with Supabase)
   proposals: Proposal[];
   setProposals: (proposals: Proposal[]) => void;
   addProposal: (proposal: Proposal) => void;
   updateProposal: (id: string, data: Partial<Proposal>) => void;
   removeProposal: (id: string) => void;
+  fetchProposals: () => Promise<void>;
 
   // Packages (local cache)
   packages: PackageTemplate[];
@@ -47,7 +49,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currentBrand: '',
       setCurrentBrand: (brand) => set({ currentBrand: brand }),
 
@@ -63,12 +65,89 @@ export const useAppStore = create<AppState>()(
 
       proposals: [],
       setProposals: (proposals) => set({ proposals }),
-      addProposal: (proposal) => set((s) => ({ proposals: [proposal, ...s.proposals] })),
-      updateProposal: (id, data) =>
+
+      addProposal: (proposal) => {
+        set((s) => ({ proposals: [proposal, ...s.proposals] }));
+        if (isSupabaseConfigured()) {
+          supabase.from('proposals').upsert({
+            id: proposal.id,
+            brand_id: proposal.brand_id,
+            proposal_no: proposal.proposal_no,
+            proposal_date: proposal.proposal_date,
+            project_name: proposal.project_name,
+            customer_name: proposal.customer_name,
+            customer_phone: proposal.customer_phone,
+            customer_city: proposal.customer_city,
+            customer_address: proposal.customer_address,
+            prepared_by: proposal.prepared_by,
+            items: proposal.items,
+            discount_value: proposal.discount_value,
+            currency: proposal.currency,
+            include_vat: proposal.include_vat,
+            conditions: proposal.conditions,
+            global_hide_prices: proposal.global_hide_prices,
+            status: proposal.status,
+            total: proposal.total,
+          }).then(({ error }) => {
+            if (error) console.error('Supabase addProposal error:', error);
+          });
+        }
+      },
+
+      updateProposal: (id, data) => {
         set((s) => ({
           proposals: s.proposals.map((p) => (p.id === id ? { ...p, ...data } : p)),
-        })),
-      removeProposal: (id) => set((s) => ({ proposals: s.proposals.filter((p) => p.id !== id) })),
+        }));
+        if (isSupabaseConfigured()) {
+          supabase.from('proposals').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id).then(({ error }) => {
+            if (error) console.error('Supabase updateProposal error:', error);
+          });
+        }
+      },
+
+      removeProposal: (id) => {
+        set((s) => ({ proposals: s.proposals.filter((p) => p.id !== id) }));
+        if (isSupabaseConfigured()) {
+          supabase.from('proposals').delete().eq('id', id).then(({ error }) => {
+            if (error) console.error('Supabase removeProposal error:', error);
+          });
+        }
+      },
+
+      fetchProposals: async () => {
+        if (!isSupabaseConfigured()) return;
+        const { data, error } = await supabase
+          .from('proposals')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) {
+          console.error('Supabase fetchProposals error:', error);
+          return;
+        }
+        if (data) {
+          const proposals: Proposal[] = data.map((row: any) => ({
+            id: row.id,
+            brand_id: row.brand_id,
+            proposal_no: row.proposal_no || '',
+            proposal_date: row.proposal_date || '',
+            project_name: row.project_name || '',
+            customer_name: row.customer_name || '',
+            customer_phone: row.customer_phone || '',
+            customer_city: row.customer_city || '',
+            customer_address: row.customer_address || '',
+            prepared_by: row.prepared_by || '',
+            items: row.items || [],
+            discount_value: row.discount_value || 0,
+            currency: row.currency || 'TRY',
+            include_vat: row.include_vat ?? true,
+            conditions: row.conditions || '',
+            global_hide_prices: row.global_hide_prices || false,
+            status: row.status || 'draft',
+            total: row.total || 0,
+          }));
+          set({ proposals });
+        }
+      },
 
       packages: [],
       setPackages: (packages) => set({ packages }),

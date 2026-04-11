@@ -3,6 +3,7 @@
 import { useParams, useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getBrand } from '@/lib/brands';
+import { useAppStore } from '@/lib/store';
 import { LayoutDashboard, FileText, Package, Users, Upload, ArrowLeft, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 
@@ -13,12 +14,17 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
   const brandId = params.brand as string;
   const brand = getBrand(brandId);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const fetchProposals = useAppStore((s) => s.fetchProposals);
 
   useEffect(() => {
     if (!['mutpro', 'guclumutfak'].includes(brandId)) {
       router.push('/');
     }
   }, [brandId, router]);
+
+  useEffect(() => {
+    fetchProposals();
+  }, [fetchProposals]);
 
   const navItems = [
     { href: `/${brandId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
