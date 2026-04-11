@@ -334,6 +334,7 @@ export default function YeniTeklifPage() {
                 <div><span className="font-bold">Teklif No:</span> {proposalNo}</div>
                 <div><span className="font-bold">Tarih:</span> {proposalDate}</div>
                 <div><span className="font-bold">Geçerlilik:</span> {getValidityDate()}</div>
+                {preparedBy && <div><span className="font-bold">Hazırlayan:</span> {preparedBy}</div>}
               </div>
             </div>
           </div>
@@ -357,13 +358,13 @@ export default function YeniTeklifPage() {
           {items.length > 0 && (
             <table className="w-full text-sm mb-8">
               <thead>
-                <tr className={`${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white text-xs`}>
-                  <th className="py-2 px-2 text-center w-10">#</th>
-                  {!isCompactMode && <th className="py-2 px-2 w-20">Görsel</th>}
-                  <th className="py-2 px-2 text-left">Ürün</th>
-                  <th className="py-2 px-2 text-center w-14">Adet</th>
-                  {!globalHidePrices && <th className="py-2 px-2 text-right w-28">Birim Fiyat (KDV Hariç)</th>}
-                  {!globalHidePrices && <th className="py-2 px-2 text-right w-28">Toplam (KDV Hariç)</th>}
+                <tr className={`${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white`}>
+                  <th className="py-3 px-3 text-center w-10 text-[11px] font-semibold tracking-wide uppercase">#</th>
+                  {!isCompactMode && <th className="py-3 px-3 w-20 text-[11px] font-semibold tracking-wide uppercase">Görsel</th>}
+                  <th className="py-3 px-3 text-left text-[11px] font-semibold tracking-wide uppercase">Ürün Adı</th>
+                  <th className="py-3 px-3 text-center w-14 text-[11px] font-semibold tracking-wide uppercase">Adet</th>
+                  {!globalHidePrices && <th className="py-3 px-3 text-right w-32 text-[11px] font-semibold tracking-wide uppercase">Birim Fiyat</th>}
+                  {!globalHidePrices && <th className="py-3 px-3 text-right w-32 text-[11px] font-semibold tracking-wide uppercase">Toplam</th>}
                 </tr>
               </thead>
               <tbody>
@@ -769,12 +770,20 @@ export default function YeniTeklifPage() {
                       <input type="number" value={item.quantity} onChange={(e) => updateItem(item.id, 'quantity', e.target.value)} className="w-12 text-center bg-transparent font-semibold" min="1" />
                     </td>
                     <td className="py-3 px-2 text-right">
-                      <div className="text-base font-bold text-gray-900 text-right">{formatCurrency(netUnitPrice, sym)}</div>
-                      <div className="text-[9px] text-gray-400 mt-0.5 text-right">KDV Dahil giriş:</div>
                       <div className="flex items-center gap-1 justify-end">
-                        <span className="text-[10px] text-gray-400">₺</span>
-                        <input type="number" value={item.price} onChange={(e) => updateItem(item.id, 'price', e.target.value)} className="w-24 text-right text-xs text-gray-500 bg-transparent border-b border-gray-200 hover:border-gray-400 focus:border-blue-500 outline-none transition" />
+                        <span className="text-xs text-gray-400">₺</span>
+                        <input
+                          type="number"
+                          value={Math.round(netUnitPrice * 100) / 100}
+                          onChange={(e) => {
+                            const netVal = parseFloat(e.target.value) || 0;
+                            const grossVal = netVal * (1 + KDV_RATE);
+                            updateItem(item.id, 'price', grossVal.toFixed(2));
+                          }}
+                          className="w-28 text-right text-base font-bold text-gray-800 bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 outline-none transition"
+                        />
                       </div>
+                      <div className="text-[9px] text-gray-400 mt-0.5 text-right">KDV Dahil: {formatCurrency(item.price, sym)}</div>
                       <div className="flex items-center gap-1 mt-1 justify-end">
                         <span className="text-[10px] text-red-400">İnd%:</span>
                         <input type="number" value={item.item_discount} onChange={(e) => updateItem(item.id, 'item_discount', e.target.value)} className="w-10 text-right text-xs border-b border-gray-200 outline-none text-red-500 font-bold" placeholder="0" />

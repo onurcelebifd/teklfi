@@ -3,7 +3,8 @@
 import { useParams } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { getBrand } from '@/lib/brands';
-import { Search, Trash2, Clock, CheckCircle, XCircle, Eye, Send, Upload, UserCheck, Calendar, ChevronDown } from 'lucide-react';
+import { formatCurrency, getCurrencySymbol } from '@/lib/helpers';
+import { Search, Trash2, Clock, CheckCircle, XCircle, Eye, Send, Upload, UserCheck, Calendar, ChevronDown, X, FileText } from 'lucide-react';
 import { useState, useRef } from 'react';
 import type { ProposalStatus, Proposal } from '@/lib/types';
 import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types';
@@ -19,6 +20,7 @@ export default function TekliflerPage() {
   const [preparedByFilter, setPreparedByFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [showUpload, setShowUpload] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Tüm hazırlayan kişileri bul (benzersiz)
@@ -131,8 +133,42 @@ export default function TekliflerPage() {
       } catch {
         alert('CSV dosyası okunurken hata oluştu.');
       }
+    } else if (ext === 'json') {
+      try {
+        const text = await file.text();
+        const jsonData = JSON.parse(text);
+        const arr = Array.isArray(jsonData) ? jsonData : [jsonData];
+        let imported = 0;
+        for (const row of arr) {
+          const proposal: Proposal = {
+            id: row.id || `import-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            brand_id: row.brand_id || brandId,
+            proposal_no: row.proposal_no || `IMP-${Date.now()}`,
+            proposal_date: row.proposal_date || new Date().toLocaleDateString('tr-TR'),
+            project_name: row.project_name || '',
+            customer_name: row.customer_name || '',
+            customer_phone: row.customer_phone || '',
+            customer_city: row.customer_city || '',
+            customer_address: row.customer_address || '',
+            prepared_by: row.prepared_by || '',
+            items: Array.isArray(row.items) ? row.items : [],
+            discount_value: row.discount_value || 0,
+            currency: row.currency || 'TRY',
+            include_vat: row.include_vat ?? true,
+            conditions: row.conditions || '',
+            global_hide_prices: row.global_hide_prices || false,
+            status: row.status || 'approved',
+            total: row.total || 0,
+          };
+          addProposal(proposal);
+          imported++;
+        }
+        alert(`${imported} teklif başarıyla içe aktarıldı!`);
+      } catch {
+        alert('JSON dosyası okunurken hata oluştu.');
+      }
     } else {
-      alert('Desteklenen formatlar: .xlsx, .xls, .csv');
+      alert('Desteklenen formatlar: .xlsx, .xls, .csv, .json');
     }
 
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -167,13 +203,13 @@ export default function TekliflerPage() {
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-5 shadow-sm">
           <h3 className="text-sm font-bold text-purple-800 mb-2">Geçmiş Teklifleri İçe Aktar</h3>
           <p className="text-xs text-purple-600 mb-3">
-            Excel (.xlsx, .xls) veya CSV dosyası yükleyin. Dosya başlıkları: Teklif No, Tarih, Proje, Müşteri, Telefon, Şehir, Adres, Hazırlayan, Toplam
+            Excel (.xlsx, .xls), CSV veya JSON dosyası yükleyin. Excel/CSV başlıkları: Teklif No, Tarih, Proje, Müşteri, Telefon, Şehir, Adres, Hazırlayan, Toplam
           </p>
           <div className="flex items-center gap-3">
             <input
               ref={fileInputRef}
               type="file"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx,.xls,.csv,.json"
               onChange={handleFileUpload}
               className="text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-700 cursor-pointer"
             />
@@ -267,10 +303,11 @@ export default function TekliflerPage() {
         <div className="space-y-3">
           <div className="text-xs text-gray-400 font-medium">{brandProposals.length} teklif bulundu</div>
           {brandProposals.map((p) => (
-            <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition">
+            <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition cursor-pointer" onClick={() => setSelectedProposal(p)}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
+                    <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <span className="text-base font-bold text-gray-900 truncate">{p.project_name || 'İsimsiz Proje'}</span>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[p.status]}`}>
                       {STATUS_LABELS[p.status]}
@@ -299,7 +336,7 @@ export default function TekliflerPage() {
                   </span>
 
                   {/* Status Actions */}
-                  <div className="flex gap-1">
+                  <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => handleStatusChange(p.id, 'sent')} className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition" title="Gönderildi"><Send className="w-3.5 h-3.5" /></button>
                     <button onClick={() => handleStatusChange(p.id, 'viewed')} className="p-1.5 rounded-lg bg-yellow-50 text-yellow-600 hover:bg-yellow-100 transition" title="Görüntülendi"><Eye className="w-3.5 h-3.5" /></button>
                     <button onClick={() => handleStatusChange(p.id, 'approved')} className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition" title="Onaylandı"><CheckCircle className="w-3.5 h-3.5" /></button>
@@ -310,6 +347,87 @@ export default function TekliflerPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedProposal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedProposal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className={`flex items-center justify-between p-5 border-b ${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} rounded-t-2xl`}>
+              <div>
+                <h2 className="text-lg font-bold text-white">{selectedProposal.project_name || 'İsimsiz Proje'}</h2>
+                <p className="text-xs text-white/70">{selectedProposal.proposal_no} • {selectedProposal.proposal_date}</p>
+              </div>
+              <button onClick={() => setSelectedProposal(null)} className="text-white/80 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Müşteri</p>
+                  <p className="text-sm font-bold text-gray-900">{selectedProposal.customer_name || '-'}</p>
+                  {selectedProposal.customer_phone && <p className="text-xs text-gray-500">{selectedProposal.customer_phone}</p>}
+                  {selectedProposal.customer_city && <p className="text-xs text-gray-500">{selectedProposal.customer_city}</p>}
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Detaylar</p>
+                  <p className="text-xs text-gray-600"><span className="font-bold">Durum:</span> <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${STATUS_COLORS[selectedProposal.status]}`}>{STATUS_LABELS[selectedProposal.status]}</span></p>
+                  {selectedProposal.prepared_by && <p className="text-xs text-gray-600 mt-1"><span className="font-bold">Hazırlayan:</span> {selectedProposal.prepared_by}</p>}
+                  <p className="text-xs text-gray-600 mt-1"><span className="font-bold">Para Birimi:</span> {selectedProposal.currency}</p>
+                </div>
+              </div>
+
+              {/* Items Table */}
+              {selectedProposal.items && selectedProposal.items.length > 0 ? (
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Ürünler ({selectedProposal.items.length})</h3>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-100 text-xs text-gray-600">
+                        <th className="py-2 px-2 text-left">#</th>
+                        <th className="py-2 px-2 text-left">Ürün</th>
+                        <th className="py-2 px-2 text-center">Adet</th>
+                        <th className="py-2 px-2 text-right">Birim Fiyat</th>
+                        <th className="py-2 px-2 text-right">Toplam</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedProposal.items.map((item, idx) => (
+                        <tr key={item.id || idx} className="border-b border-gray-100">
+                          <td className="py-2 px-2 text-gray-400">{idx + 1}</td>
+                          <td className="py-2 px-2 font-medium text-gray-900">{item.name}</td>
+                          <td className="py-2 px-2 text-center">{item.quantity}</td>
+                          <td className="py-2 px-2 text-right">{formatCurrency(item.price / 1.2, getCurrencySymbol(selectedProposal.currency))}</td>
+                          <td className="py-2 px-2 text-right font-bold">{formatCurrency(item.total / 1.2, getCurrencySymbol(selectedProposal.currency))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-4">Bu teklifte ürün bilgisi bulunmuyor</p>
+              )}
+
+              {/* Total */}
+              <div className="flex justify-end">
+                <div className="w-64 space-y-1 text-sm bg-gray-50 rounded-lg p-3">
+                  <div className="flex justify-between"><span className="text-gray-500">Ara Toplam (KDV Hariç):</span><span className="font-semibold">{formatCurrency((selectedProposal.total || 0) / 1.2, getCurrencySymbol(selectedProposal.currency))}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">KDV (%20):</span><span>{formatCurrency((selectedProposal.total || 0) - (selectedProposal.total || 0) / 1.2, getCurrencySymbol(selectedProposal.currency))}</span></div>
+                  <div className="flex justify-between text-base font-extrabold border-t pt-1 mt-1"><span>GENEL TOPLAM:</span><span>{formatCurrency(selectedProposal.total || 0, getCurrencySymbol(selectedProposal.currency))}</span></div>
+                </div>
+              </div>
+
+              {/* Conditions */}
+              {selectedProposal.conditions && (
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-1">Şartlar ve Koşullar</h3>
+                  <p className="text-xs text-gray-500 whitespace-pre-wrap bg-gray-50 rounded-lg p-3">{selectedProposal.conditions}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
