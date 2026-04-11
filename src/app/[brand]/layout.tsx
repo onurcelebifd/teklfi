@@ -43,15 +43,14 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
-                src={brand.id === 'mutpro' ? '/logos/mutpro-logo-white.svg' : brand.logo}
+                src={brand.logo}
                 alt={brand.name}
-                className="h-8 object-contain"
+                className="h-10 object-contain brightness-0 invert"
                 onError={(e) => {
                   const t = e.target as HTMLImageElement;
                   t.style.display = 'none';
                 }}
               />
-              <span className="text-white font-bold text-sm">{brand.fullName}</span>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white">
               <X className="w-5 h-5" />
