@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { getBrand } from '@/lib/brands';
@@ -16,7 +16,10 @@ export default function YeniTeklifPage() {
   const router = useRouter();
   const brandId = params.brand as string;
   const brand = getBrand(brandId);
-  const { products, customers, addProposal, addProduct, rates } = useAppStore();
+  const { products, customers, proposals, addProposal, updateProposal, addProduct, rates } = useAppStore();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('id');
+  const editingProposal = editId ? proposals.find(p => p.id === editId) : null;
   const printRef = useRef<HTMLDivElement>(null);
 
   // Editable exchange rate (TCMB'den gelir, kullanıcı değiştirebilir)
@@ -34,8 +37,8 @@ export default function YeniTeklifPage() {
   const brandProducts = products.filter((p) => p.brand_id === brandId);
   const brandCustomers = customers.filter((c) => c.brand_id === brandId);
 
-  const [proposalNo] = useState(generateProposalNo(brandId));
-  const [proposalDate] = useState(getTodayDate());
+  const [proposalNo, setProposalNo] = useState(generateProposalNo(brandId));
+  const [proposalDate, setProposalDate] = useState(getTodayDate());
   const [projectName, setProjectName] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -51,6 +54,7 @@ export default function YeniTeklifPage() {
   const [conditions, setConditions] = useState(
     `• ${getValidityText()}\n• Ödeme: Sipariş ile birlikte.\n• Teslimat: Stok durumuna göre 1-4 hafta.\n• Fiyatlara KDV dahil değildir.\n• Nakliye alıcıya aittir.`
   );
+  const [isLoaded, setIsLoaded] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false);
   const [isCompactMode, setIsCompactMode] = useState(false);
   const [showProductSearch, setShowProductSearch] = useState(false);
@@ -68,6 +72,26 @@ export default function YeniTeklifPage() {
   const [nameSuggestions, setNameSuggestions] = useState<typeof brandProducts>([]);
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Load existing proposal for editing
+  useEffect(() => {
+    if (editingProposal && !isLoaded) {
+      setProposalNo(editingProposal.proposal_no);
+      setProposalDate(editingProposal.proposal_date);
+      setProjectName(editingProposal.project_name);
+      setCustomerName(editingProposal.customer_name);
+      setCustomerPhone(editingProposal.customer_phone);
+      setCustomerCity(editingProposal.customer_city);
+      setCustomerAddress(editingProposal.customer_address);
+      setPreparedBy(editingProposal.prepared_by);
+      setItems(editingProposal.items || []);
+      setCurrency(editingProposal.currency);
+      setDiscountValue(editingProposal.discount_value);
+      setGlobalHidePrices(editingProposal.global_hide_prices);
+      setConditions(editingProposal.conditions);
+      setIsLoaded(true);
+    }
+  }, [editingProposal, isLoaded]);
 
   // Drag state
   const dragItem = useRef<number | null>(null);
@@ -232,28 +256,51 @@ export default function YeniTeklifPage() {
 
   const handleSave = () => {
     if (!isFormValid) return alert('Teklifi Hazırlayan alanı zorunludur!');
-    const proposal: Proposal = {
-      id: Date.now().toString(),
-      brand_id: brandId,
-      proposal_no: proposalNo,
-      proposal_date: proposalDate,
-      project_name: projectName,
-      customer_name: customerName,
-      customer_phone: customerPhone,
-      customer_city: customerCity,
-      customer_address: customerAddress,
-      prepared_by: preparedBy.trim(),
-      items,
-      discount_value: discountValue,
-      currency,
-      include_vat: includeVAT,
-      conditions,
-      global_hide_prices: globalHidePrices,
-      status: 'draft',
-      total: finalTotal,
-    };
-    addProposal(proposal);
-    alert('Teklif başarıyla kaydedildi!');
+    if (editId) {
+      // Update existing proposal
+      updateProposal(editId, {
+        proposal_no: proposalNo,
+        proposal_date: proposalDate,
+        project_name: projectName,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_city: customerCity,
+        customer_address: customerAddress,
+        prepared_by: preparedBy.trim(),
+        items,
+        discount_value: discountValue,
+        currency,
+        include_vat: includeVAT,
+        conditions,
+        global_hide_prices: globalHidePrices,
+        total: finalTotal,
+      });
+      alert('Teklif başarıyla güncellendi!');
+    } else {
+      // Create new proposal
+      const proposal: Proposal = {
+        id: Date.now().toString(),
+        brand_id: brandId,
+        proposal_no: proposalNo,
+        proposal_date: proposalDate,
+        project_name: projectName,
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_city: customerCity,
+        customer_address: customerAddress,
+        prepared_by: preparedBy.trim(),
+        items,
+        discount_value: discountValue,
+        currency,
+        include_vat: includeVAT,
+        conditions,
+        global_hide_prices: globalHidePrices,
+        status: 'draft',
+        total: finalTotal,
+      };
+      addProposal(proposal);
+      alert('Teklif başarıyla kaydedildi!');
+    }
     router.push(`/${brandId}/teklifler`);
   };
 
