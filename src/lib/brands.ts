@@ -23,7 +23,7 @@ export const BRANDS: Record<string, BrandConfig> = {
     id: 'mutpro',
     name: 'MutPro',
     fullName: 'MUTPRO',
-    logo: 'https://mutpro.com/logo-beyaz.png',
+    logo: '/logos/mutpro-logo.svg',
     primaryColor: 'bg-[#040023]',
     bgColor: 'bg-blue-50',
     textColor: 'text-blue-700',

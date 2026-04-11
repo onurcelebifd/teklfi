@@ -30,9 +30,9 @@ export default function HomePage() {
               onClick={() => handleBrandSelect(brand.id)}
               className="group relative bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] p-8 flex flex-col items-center gap-6 border border-gray-100"
             >
-              <div className={`w-full h-32 flex items-center justify-center rounded-xl ${brand.id === 'mutpro' ? 'bg-[#040023] p-4' : ''}`}>
+              <div className={`w-full h-32 flex items-center justify-center rounded-xl ${brand.id === 'mutpro' ? 'bg-orange-500 p-4' : ''}`}>
                 <img
-                  src={brand.logo}
+                  src={brand.id === 'mutpro' ? '/logos/mutpro-logo-white.svg' : brand.logo}
                   alt={brand.name}
                   className="max-h-full max-w-[280px] object-contain"
                   onError={(e) => {
@@ -51,7 +51,7 @@ export default function HomePage() {
                 <p className="text-xs text-gray-400 mt-2">{brand.address.join(', ')}</p>
               </div>
 
-              <div className={`w-full py-3 rounded-xl ${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white font-bold text-sm tracking-wide transition-opacity group-hover:opacity-90`}>
+              <div className={`w-full py-3 rounded-xl ${brand.id === 'mutpro' ? 'bg-orange-500' : 'bg-red-600'} text-white font-bold text-sm tracking-wide transition-opacity group-hover:opacity-90`}>
                 Panele Giriş →
               </div>
             </button>
