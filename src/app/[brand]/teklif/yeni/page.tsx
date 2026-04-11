@@ -738,9 +738,11 @@ export default function YeniTeklifPage() {
             </thead>
             <tbody>
               {items.map((item, idx) => {
-                const unitPrice = item.price * (1 - item.item_discount / 100);
-                const itemProfit = (unitPrice - item.cost) * item.quantity;
-                const itemProfitPercent = item.cost > 0 ? ((unitPrice - item.cost) / item.cost) * 100 : 100;
+                const brutUnitPrice = item.price * (1 - item.item_discount / 100);
+                const netUnitPrice = brutUnitPrice / (1 + KDV_RATE);
+                const netLineTotal = item.total / (1 + KDV_RATE);
+                const itemProfit = (netUnitPrice - item.cost) * item.quantity;
+                const itemProfitPercent = item.cost > 0 ? ((netUnitPrice - item.cost) / item.cost) * 100 : 100;
                 return (
                   <tr
                     key={item.id}
@@ -772,12 +774,13 @@ export default function YeniTeklifPage() {
                         <span className="text-xs text-gray-400">₺</span>
                         <input type="number" value={item.price} onChange={(e) => updateItem(item.id, 'price', e.target.value)} className="w-28 text-right text-base font-bold text-gray-800 bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 outline-none transition" />
                       </div>
+                      <div className="text-[9px] text-blue-500 mt-0.5 text-right">KDV Hariç: {formatCurrency(netUnitPrice, sym)}</div>
                       <div className="flex items-center gap-1 mt-1 justify-end">
                         <span className="text-[10px] text-red-400">İnd%:</span>
                         <input type="number" value={item.item_discount} onChange={(e) => updateItem(item.id, 'item_discount', e.target.value)} className="w-10 text-right text-xs border-b border-gray-200 outline-none text-red-500 font-bold" placeholder="0" />
                       </div>
                       {item.item_discount > 0 && (
-                        <div className="text-[10px] text-gray-400 mt-0.5">Net: {formatCurrency(unitPrice, sym)}</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">Net (KDV Hariç): {formatCurrency(netUnitPrice, sym)}</div>
                       )}
                     </td>
                     <td className="py-3 px-2 text-right bg-orange-50/50">
@@ -788,7 +791,7 @@ export default function YeniTeklifPage() {
                         <input type="number" value={item.cost} onChange={(e) => updateItem(item.id, 'cost', e.target.value)} className="w-20 text-center text-xs bg-white border border-gray-200 rounded px-1 py-0.5 mt-0.5" placeholder="0" />
                       </div>
                     </td>
-                    <td className="py-3 px-2 text-right font-bold text-gray-800">{formatCurrency(item.total, sym)}</td>
+                    <td className="py-3 px-2 text-right font-bold text-gray-800">{formatCurrency(netLineTotal, sym)}</td>
                     <td className="py-3 px-2">
                       <div className="grid grid-cols-2 gap-1 w-fit mx-auto">
                         <button onClick={() => updateItem(item.id, 'hide_price', !item.hide_price)} className={`p-1.5 rounded ${item.hide_price ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'} hover:bg-orange-200`} title="Fiyatı Gizle">
