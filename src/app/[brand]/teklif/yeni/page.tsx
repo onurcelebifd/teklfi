@@ -322,7 +322,7 @@ export default function YeniTeklifPage() {
           {/* Header */}
           <div className={`flex justify-between items-start mb-6 pb-4 border-b-2 ${brand.id === 'mutpro' ? 'border-[#040023]' : 'border-red-600'}`}>
             <div>
-              <img src={brand.logo} alt={brand.name} className="h-16 object-contain mb-1" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <img src={brand.logo} alt={brand.name} className="h-24 object-contain mb-1" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               <div className="text-[10px] text-gray-500 space-y-0.5 mt-1 leading-tight">
                 {brand.address.map((line, i) => <div key={i}>{line}</div>)}
                 <div>{brand.phone} • {brand.email}</div>
