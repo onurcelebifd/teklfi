@@ -138,26 +138,55 @@ export default function TekliflerPage() {
       try {
         const text = await file.text();
         const jsonData = JSON.parse(text);
-        const arr = Array.isArray(jsonData) ? jsonData : [jsonData];
+
+        // Eski MultiPanel yedek formatı desteği
+        let arr: any[];
+        if (jsonData.savedProposals && Array.isArray(jsonData.savedProposals)) {
+          arr = jsonData.savedProposals;
+        } else if (Array.isArray(jsonData)) {
+          arr = jsonData;
+        } else {
+          arr = [jsonData];
+        }
+
         let imported = 0;
         for (const row of arr) {
+          // Eski camelCase formatından dönüştür
+          const customer = row.customer || {};
+          const mapItems = (items: any[]) => items.map((item: any) => ({
+            id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            name: item.name || '',
+            description: item.description || '',
+            price: item.price || 0,
+            cost: item.cost || 0,
+            quantity: item.quantity || 1,
+            image: item.image || '',
+            product_link: item.productLink || item.product_link || '',
+            item_discount: item.itemDiscount || item.item_discount || 0,
+            total: item.total || (item.price || 0) * (1 - (item.itemDiscount || item.item_discount || 0) / 100) * (item.quantity || 1),
+            input_currency: item.inputCurrency || item.input_currency || 'TRY',
+            exchange_rate: item.exchangeRate || item.exchange_rate || 1,
+            hide_price: item.hidePrice || item.hide_price || false,
+            shipped: item.shipped || false,
+          }));
+
           const proposal: Proposal = {
-            id: row.id || `import-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            id: row.id?.toString() || `import-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             brand_id: row.brand_id || brandId,
-            proposal_no: row.proposal_no || `IMP-${Date.now()}`,
-            proposal_date: row.proposal_date || new Date().toLocaleDateString('tr-TR'),
-            project_name: row.project_name || '',
-            customer_name: row.customer_name || '',
-            customer_phone: row.customer_phone || '',
-            customer_city: row.customer_city || '',
-            customer_address: row.customer_address || '',
-            prepared_by: row.prepared_by || '',
-            items: Array.isArray(row.items) ? row.items : [],
-            discount_value: row.discount_value || 0,
+            proposal_no: row.proposal_no || row.proposalNo || `IMP-${Date.now()}`,
+            proposal_date: row.proposal_date || row.proposalDate || new Date().toLocaleDateString('tr-TR'),
+            project_name: row.project_name || row.projectName || '',
+            customer_name: row.customer_name || customer.name || '',
+            customer_phone: row.customer_phone || customer.phone || '',
+            customer_city: row.customer_city || customer.city || '',
+            customer_address: row.customer_address || customer.address || '',
+            prepared_by: row.prepared_by || row.preparedBy || '',
+            items: Array.isArray(row.items) ? mapItems(row.items) : [],
+            discount_value: row.discount_value ?? row.discountValue ?? 0,
             currency: row.currency || 'TRY',
-            include_vat: row.include_vat ?? true,
+            include_vat: row.include_vat ?? row.includeVAT ?? true,
             conditions: row.conditions || '',
-            global_hide_prices: row.global_hide_prices || false,
+            global_hide_prices: row.global_hide_prices ?? row.globalHidePrices ?? false,
             status: row.status || 'approved',
             total: row.total || 0,
           };
