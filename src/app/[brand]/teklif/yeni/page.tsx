@@ -16,7 +16,7 @@ export default function YeniTeklifPage() {
   const router = useRouter();
   const brandId = params.brand as string;
   const brand = getBrand(brandId);
-  const { products, customers, proposals, addProposal, updateProposal, addProduct, rates } = useAppStore();
+  const { products, customers, proposals, addProposal, updateProposal, addProduct, removeProduct, setProducts, rates } = useAppStore();
   const searchParams = useSearchParams();
   const editId = searchParams.get('id');
   const editingProposal = editId ? proposals.find(p => p.id === editId) : null;
@@ -67,6 +67,7 @@ export default function YeniTeklifPage() {
   // New product form (kataloga kaydetme)
   const [showNewProductForm, setShowNewProductForm] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', category: '', price: '', cost: '', image: '', product_link: '' });
+  const [newProductCurrency, setNewProductCurrency] = useState<'EUR' | 'TRY' | 'USD' | 'GBP'>('EUR');
 
   // Livesearch state for product name input
   const [nameSuggestions, setNameSuggestions] = useState<typeof brandProducts>([]);
@@ -118,7 +119,24 @@ export default function YeniTeklifPage() {
     newEntry.total = newEntry.price * (1 - newEntry.item_discount / 100) * newEntry.quantity;
     setItems((prev) => [...prev, newEntry]);
     setNewItem({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
-  }, [newItem, currency]);
+
+    // Otomatik ürün kataloğuna kaydet (aynı isim yoksa)
+    const exists = products.some(p => p.brand_id === brandId && p.name.toLowerCase() === newEntry.name.toLowerCase());
+    if (!exists && newEntry.name.trim()) {
+      addProduct({
+        id: `auto-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        brand_id: brandId,
+        name: newEntry.name,
+        description: newEntry.description || '',
+        price: newEntry.price,
+        cost: newEntry.cost,
+        image: newEntry.image || '',
+        product_link: newEntry.product_link || '',
+        category: '',
+        currency: 'TRY',
+      });
+    }
+  }, [newItem, currency, products, brandId, addProduct]);
 
   const updateItem = (id: string, field: string, value: any) => {
     setItems((prev) =>
@@ -205,6 +223,14 @@ export default function YeniTeklifPage() {
     setShowCustomerPicker(false);
   };
 
+  const convertToTry = (amount: number, fromCurrency: string) => {
+    if (fromCurrency === 'TRY') return amount;
+    if (fromCurrency === 'EUR') return Math.round(amount * eurRate * 100) / 100;
+    if (fromCurrency === 'USD') return Math.round(amount * usdRate * 100) / 100;
+    if (fromCurrency === 'GBP') return Math.round(amount * gbpRate * 100) / 100;
+    return amount;
+  };
+
   // Yeni ürün oluştur ve kataloga kaydet
   const saveNewProduct = () => {
     if (!newProduct.name.trim()) return alert('Ürün adı zorunludur');
@@ -220,12 +246,12 @@ export default function YeniTeklifPage() {
       image: newProduct.image.trim(),
       product_link: newProduct.product_link.trim(),
       category: newProduct.category.trim(),
-      currency: 'EUR',
+      currency: newProductCurrency,
     };
     addProduct(product);
-    // Aynı zamanda teklife de ekle (EUR -> TRY dönüşümü ile)
-    const priceInTry = eurToTry(price);
-    const costInTry = eurToTry(cost);
+    // Teklife eklerken TRY'ye dönüştür
+    const priceInTry = convertToTry(price, newProductCurrency);
+    const costInTry = convertToTry(cost, newProductCurrency);
     addItem({ name: product.name, description: '', price: priceInTry, cost: costInTry, image: product.image, product_link: product.product_link, quantity: 1 });
     setNewProduct({ name: '', category: '', price: '', cost: '', image: '', product_link: '' });
     setShowNewProductForm(false);
@@ -422,21 +448,21 @@ export default function YeniTeklifPage() {
                   const isHidden = globalHidePrices || item.hide_price;
                   return (
                     <tr key={item.id} className={`border-b border-gray-100 ${item.shipped ? 'line-through opacity-50' : ''}`}>
-                      <td className="py-3 px-2 text-center text-gray-500 font-medium">{idx + 1}</td>
+                      <td className="py-4 px-3 text-center text-gray-500 font-medium text-sm">{idx + 1}</td>
                       {!isCompactMode && (
-                        <td className="py-2 px-2">
-                          <div className="w-12 h-12 border rounded bg-white overflow-hidden">
+                        <td className="py-3 px-3">
+                          <div className="w-16 h-16 border rounded bg-white overflow-hidden">
                             {item.image ? <img src={item.image} className="w-full h-full object-contain" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : <div className="w-full h-full bg-gray-100" />}
                           </div>
                         </td>
                       )}
-                      <td className="py-3 px-2">
-                        <div className="font-medium text-gray-900">{item.name}</div>
+                      <td className="py-4 px-3">
+                        <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                         {item.description && <div className="text-xs text-gray-500 italic mt-0.5">{item.description}</div>}
                       </td>
-                      <td className="py-3 px-2 text-center font-semibold">{item.quantity}</td>
-                      {!isHidden && <td className="py-3 px-2 text-right font-bold">{formatCurrency(netUnitPrice, sym)}</td>}
-                      {!isHidden && <td className="py-3 px-2 text-right font-bold">{formatCurrency(netLineTotal, sym)}</td>}
+                      <td className="py-4 px-3 text-center font-semibold text-sm">{item.quantity}</td>
+                      {!isHidden && <td className="py-4 px-3 text-right font-bold text-sm">{formatCurrency(netUnitPrice, sym)}</td>}
+                      {!isHidden && <td className="py-4 px-3 text-right font-bold text-sm">{formatCurrency(netLineTotal, sym)}</td>}
                       {isHidden && !globalHidePrices && <td className="py-3 px-2 text-center text-gray-400">-</td>}
                       {isHidden && !globalHidePrices && <td className="py-3 px-2 text-center text-gray-400">-</td>}
                     </tr>
@@ -736,11 +762,20 @@ export default function YeniTeklifPage() {
                 <input type="text" value={newProduct.category} onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="Ör: Fırınlar" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Fiyat (€ EUR)</label>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Para Birimi</label>
+                <select value={newProductCurrency} onChange={(e) => setNewProductCurrency(e.target.value as any)} className="w-full p-2 border border-gray-300 rounded-lg text-sm font-bold">
+                  <option value="TRY">₺ TRY</option>
+                  <option value="EUR">€ EUR</option>
+                  <option value="USD">$ USD</option>
+                  <option value="GBP">£ GBP</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Fiyat ({getCurrencySymbol(newProductCurrency)} {newProductCurrency})</label>
                 <input type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="0" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Maliyet (€ EUR)</label>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Maliyet ({getCurrencySymbol(newProductCurrency)} {newProductCurrency})</label>
                 <input type="number" value={newProduct.cost} onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="0" />
               </div>
               <div>
@@ -757,9 +792,9 @@ export default function YeniTeklifPage() {
                 </button>
               </div>
             </div>
-            {newProduct.price && (
+            {newProduct.price && newProductCurrency !== 'TRY' && (
               <div className="mt-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
-                €{parseFloat(newProduct.price).toLocaleString('tr-TR')} × {eurRate} = <span className="font-bold text-gray-900">₺{eurToTry(parseFloat(newProduct.price) || 0).toLocaleString('tr-TR')}</span> (TL karşılığı)
+                {getCurrencySymbol(newProductCurrency)}{parseFloat(newProduct.price).toLocaleString('tr-TR')} × {newProductCurrency === 'EUR' ? eurRate : newProductCurrency === 'USD' ? usdRate : gbpRate} = <span className="font-bold text-gray-900">₺{convertToTry(parseFloat(newProduct.price) || 0, newProductCurrency).toLocaleString('tr-TR')}</span> (TL karşılığı)
               </div>
             )}
           </div>

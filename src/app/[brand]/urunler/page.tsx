@@ -122,11 +122,11 @@ export default function UrunlerPage() {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          const newProducts: Product[] = [];
+          const csvRows: Product[] = [];
           results.data.forEach((row: any) => {
             const name = row['Ürün Adı'] || row['name'] || row['Name'] || row['urun_adi'] || '';
             if (!name) return;
-            newProducts.push({
+            csvRows.push({
               id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
               brand_id: brandId,
               name,
@@ -139,13 +139,54 @@ export default function UrunlerPage() {
               currency: row['Para Birimi'] || row['currency'] || 'TRY',
             });
           });
-          if (newProducts.length > 0) {
-            if (confirm(`${newProducts.length} ürün bulundu. Eklemek istiyor musunuz?`)) {
-              setProducts([...products, ...newProducts]);
-              alert(`${newProducts.length} ürün başarıyla eklendi!`);
-            }
-          } else {
+
+          if (csvRows.length === 0) {
             alert('CSV dosyasında uygun veri bulunamadı. Sütun başlıklarını kontrol edin.');
+            return;
+          }
+
+          // Upsert: mevcut ürünleri güncelle, yenileri ekle
+          const existingBrandProducts = products.filter(p => p.brand_id === brandId);
+          const otherBrandProducts = products.filter(p => p.brand_id !== brandId);
+          let added = 0;
+          let updated = 0;
+          let unchanged = 0;
+
+          const updatedBrandProducts = [...existingBrandProducts];
+
+          for (const csvProduct of csvRows) {
+            const existingIdx = updatedBrandProducts.findIndex(
+              p => p.name.toLowerCase().trim() === csvProduct.name.toLowerCase().trim()
+            );
+
+            if (existingIdx >= 0) {
+              const existing = updatedBrandProducts[existingIdx];
+              // Fiyat veya maliyet değiştiyse güncelle
+              if (existing.price !== csvProduct.price || existing.cost !== csvProduct.cost) {
+                updatedBrandProducts[existingIdx] = {
+                  ...existing,
+                  price: csvProduct.price,
+                  cost: csvProduct.cost,
+                  image: csvProduct.image || existing.image,
+                  product_link: csvProduct.product_link || existing.product_link,
+                  category: csvProduct.category || existing.category,
+                };
+                updated++;
+              } else {
+                unchanged++;
+              }
+            } else {
+              // Yeni ürün ekle
+              updatedBrandProducts.push(csvProduct);
+              added++;
+            }
+          }
+
+          const msg = `CSV'den ${csvRows.length} ürün okundu:\n• ${added} yeni ürün eklenecek\n• ${updated} ürün fiyatı güncellenecek\n• ${unchanged} ürün değişmedi (atlanacak)\n\nDevam edilsin mi?`;
+
+          if (confirm(msg)) {
+            setProducts([...otherBrandProducts, ...updatedBrandProducts]);
+            alert(`Tamamlandı! ${added} eklendi, ${updated} güncellendi.`);
           }
         },
         error: () => alert('CSV dosyası okunurken hata oluştu.'),
