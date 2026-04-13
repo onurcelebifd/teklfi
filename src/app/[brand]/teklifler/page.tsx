@@ -15,7 +15,7 @@ export default function TekliflerPage() {
   const brandId = params.brand as string;
   const router = useRouter();
   const brand = getBrand(brandId);
-  const { proposals, addProposal, updateProposal, removeProposal } = useAppStore();
+  const { proposals, addProposal, setProposals, updateProposal, removeProposal } = useAppStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [preparedByFilter, setPreparedByFilter] = useState('');
@@ -150,6 +150,7 @@ export default function TekliflerPage() {
         }
 
         let imported = 0;
+        const newProposals: Proposal[] = [];
         for (const row of arr) {
           // Eski camelCase formatından dönüştür
           const customer = row.customer || {};
@@ -190,11 +191,15 @@ export default function TekliflerPage() {
             status: row.status || 'approved',
             total: row.total || 0,
           };
-          addProposal(proposal);
+          newProposals.push(proposal);
           imported++;
         }
+        if (newProposals.length > 0) {
+          setProposals([...newProposals, ...proposals]);
+        }
         alert(`${imported} teklif başarıyla içe aktarıldı!`);
-      } catch {
+      } catch (err) {
+        console.error('JSON import error:', err);
         alert('JSON dosyası okunurken hata oluştu.');
       }
     } else {
