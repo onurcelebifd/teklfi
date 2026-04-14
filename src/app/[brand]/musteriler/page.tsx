@@ -66,7 +66,7 @@ export default function MusterilerPage() {
         </div>
         <button
           onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: '', phone: '', city: '', address: '' }); }}
-          className={`${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2`}
+          className={`${brand.buttonColor} text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2`}
         >
           <Plus className="w-4 h-4" /> Yeni Müşteri
         </button>
@@ -101,7 +101,7 @@ export default function MusterilerPage() {
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50">İptal</button>
-                <button onClick={handleSave} className={`px-4 py-2 rounded-lg text-white text-sm font-bold hover:opacity-90 ${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} flex items-center gap-2`}>
+                <button onClick={handleSave} className={`px-4 py-2 rounded-lg text-white text-sm font-bold hover:opacity-90 ${brand.buttonColor} flex items-center gap-2`}>
                   <Save className="w-4 h-4" /> Kaydet
                 </button>
               </div>

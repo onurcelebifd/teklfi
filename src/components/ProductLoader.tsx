@@ -19,22 +19,29 @@ export default function ProductLoader() {
 
     // Load products for all brands
     const loadAll = async () => {
-      const allProducts: any[] = [];
+      const jsonProducts: any[] = [];
       for (const [brandId, file] of Object.entries(BRAND_FILES)) {
         try {
           const res = await fetch(file);
           if (!res.ok) continue;
           const data = await res.json();
           if (Array.isArray(data)) {
-            allProducts.push(...data);
+            jsonProducts.push(...data);
             console.log(`✅ ${data.length} ${brandId} ürünü yüklendi.`);
           }
         } catch (err) {
           console.warn(`${brandId} ürünleri yüklenemedi:`, err);
         }
       }
-      if (allProducts.length > 0) {
-        setProducts(allProducts);
+      if (jsonProducts.length > 0) {
+        // Manuel eklenen ürünleri koru (id'si auto- veya custom- ile başlayanlar)
+        const manualProducts = products.filter(
+          (p) => p.id.startsWith('auto-') || p.id.startsWith('custom-') || !jsonProducts.some((jp) => jp.id === p.id)
+        );
+        // JSON ürünlerini + manuel ürünleri birleştir
+        const jsonIds = new Set(jsonProducts.map((p) => p.id));
+        const uniqueManual = manualProducts.filter((p) => !jsonIds.has(p.id));
+        setProducts([...jsonProducts, ...uniqueManual]);
       }
     };
 

@@ -30,7 +30,7 @@ export default function HomePage() {
               onClick={() => handleBrandSelect(brand.id)}
               className="group relative bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] p-8 flex flex-col items-center gap-6 border border-gray-100"
             >
-              <div className={`w-full h-32 flex items-center justify-center rounded-xl ${brand.id === 'mutpro' ? 'bg-white p-4 border border-gray-100' : ''}`}>
+              <div className="w-full h-32 flex items-center justify-center rounded-xl bg-white p-4 border border-gray-100">
                 <img
                   src={brand.logo}
                   alt={brand.name}
@@ -51,7 +51,7 @@ export default function HomePage() {
                 <p className="text-xs text-gray-400 mt-2">{brand.address.join(', ')}</p>
               </div>
 
-              <div className={`w-full py-3 rounded-xl ${brand.id === 'mutpro' ? 'bg-orange-500' : 'bg-red-600'} text-white font-bold text-sm tracking-wide transition-opacity group-hover:opacity-90`}>
+              <div className={`w-full py-3 rounded-xl ${brand.buttonColor} text-white font-bold text-sm tracking-wide transition-opacity group-hover:opacity-90`}>
                 Panele Giriş →
               </div>
             </button>

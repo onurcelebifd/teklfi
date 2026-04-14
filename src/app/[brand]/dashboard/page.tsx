@@ -45,7 +45,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href={`/${brandId}/teklif/yeni`}
-          className={`${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2`}
+          className={`${brand.buttonColor} text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2`}
         >
           <Plus className="w-4 h-4" /> Yeni Teklif
         </Link>

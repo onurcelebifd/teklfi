@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { getBrand } from '@/lib/brands';
 import { formatCurrency, getCurrencySymbol } from '@/lib/helpers';
-import { Search, Trash2, Clock, CheckCircle, XCircle, Eye, Send, Upload, UserCheck, Calendar, ChevronDown, X, FileText } from 'lucide-react';
+import { Search, Trash2, Clock, CheckCircle, XCircle, Eye, Send, Upload, UserCheck, Calendar, FileText } from 'lucide-react';
 import { useState, useRef } from 'react';
 import type { ProposalStatus, Proposal } from '@/lib/types';
 import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types';
@@ -21,7 +21,6 @@ export default function TekliflerPage() {
   const [preparedByFilter, setPreparedByFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [showUpload, setShowUpload] = useState(false);
-  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Tüm hazırlayan kişileri bul (benzersiz)
@@ -330,7 +329,7 @@ export default function TekliflerPage() {
           <Clock className="w-12 h-12 mx-auto mb-4 opacity-30" />
           <p className="text-lg font-medium">Henüz teklif bulunamadı</p>
           <p className="text-sm mt-1">Yeni teklif oluşturarak başlayabilirsiniz</p>
-          <Link href={`/${brandId}/teklif/yeni`} className={`inline-block mt-4 px-4 py-2 rounded-lg text-white text-sm font-bold ${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'}`}>
+          <Link href={`/${brandId}/teklif/yeni`} className={`inline-block mt-4 px-4 py-2 rounded-lg text-white text-sm font-bold ${brand.buttonColor}`}>
             Yeni Teklif Oluştur
           </Link>
         </div>

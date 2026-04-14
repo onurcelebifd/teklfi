@@ -193,8 +193,8 @@ export default function YeniTeklifPage() {
       const q = value.toLowerCase();
       const matches = brandProducts.filter((p) => {
         const nameMatch = p.name.toLowerCase().includes(q);
-        const mfrMatch = ((p as any).manufacturer || '').toLowerCase().includes(q);
-        const skuMatch = ((p as any).sku || '').toLowerCase().includes(q);
+        const mfrMatch = (p.manufacturer || '').toLowerCase().includes(q);
+        const skuMatch = (p.sku || '').toLowerCase().includes(q);
         const catMatch = (p.category || '').toLowerCase().includes(q);
         return nameMatch || mfrMatch || skuMatch || catMatch;
       }).slice(0, 15);
@@ -347,28 +347,49 @@ export default function YeniTeklifPage() {
       };
       await html2pdf().set(opt).from(printRef.current).save();
 
-      // PDF indirildiğinde otomatik olarak geçmişe kaydet
-      const proposal: Proposal = {
-        id: Date.now().toString(),
-        brand_id: brandId,
-        proposal_no: proposalNo,
-        proposal_date: proposalDate,
-        project_name: projectName,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_city: customerCity,
-        customer_address: customerAddress,
-        prepared_by: preparedBy.trim(),
-        items,
-        discount_value: discountValue,
-        currency,
-        include_vat: includeVAT,
-        conditions,
-        global_hide_prices: globalHidePrices,
-        status: 'sent',
-        total: finalTotal,
-      };
-      addProposal(proposal);
+      // PDF indirildiğinde otomatik olarak geçmişe kaydet veya güncelle
+      if (editId) {
+        updateProposal(editId, {
+          proposal_no: proposalNo,
+          proposal_date: proposalDate,
+          project_name: projectName,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_city: customerCity,
+          customer_address: customerAddress,
+          prepared_by: preparedBy.trim(),
+          items,
+          discount_value: discountValue,
+          currency,
+          include_vat: includeVAT,
+          conditions,
+          global_hide_prices: globalHidePrices,
+          status: 'sent',
+          total: finalTotal,
+        });
+      } else {
+        const proposal: Proposal = {
+          id: Date.now().toString(),
+          brand_id: brandId,
+          proposal_no: proposalNo,
+          proposal_date: proposalDate,
+          project_name: projectName,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_city: customerCity,
+          customer_address: customerAddress,
+          prepared_by: preparedBy.trim(),
+          items,
+          discount_value: discountValue,
+          currency,
+          include_vat: includeVAT,
+          conditions,
+          global_hide_prices: globalHidePrices,
+          status: 'sent',
+          total: finalTotal,
+        };
+        addProposal(proposal);
+      }
     } catch {
       alert('PDF oluşturulurken hata oluştu.');
     }
@@ -393,7 +414,7 @@ export default function YeniTeklifPage() {
 
         <div ref={printRef} className="bg-white p-6 rounded-xl shadow-lg page-container">
           {/* Header */}
-          <div className={`flex justify-between items-start mb-6 pb-4 border-b-2 ${brand.id === 'mutpro' ? 'border-[#040023]' : 'border-red-600'}`}>
+          <div className="flex justify-between items-start mb-6 pb-4 border-b-2" style={{ borderColor: brand.accentColor }}>
             <div>
               <img src={brand.logo} alt={brand.name} className="h-[120px] object-contain mb-1" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               <div className="text-[10px] text-gray-500 space-y-0.5 mt-1 leading-tight">
@@ -402,7 +423,7 @@ export default function YeniTeklifPage() {
               </div>
             </div>
             <div className="text-right">
-              <h1 className={`text-lg font-extrabold ${brand.id === 'mutpro' ? 'text-[#040023]' : 'text-red-600'} mb-1`}>FİYAT TEKLİFİ</h1>
+              <h1 className={`text-lg font-extrabold ${brand.textColor} mb-1`}>FİYAT TEKLİFİ</h1>
               <div className="text-xs space-y-0.5 text-gray-600">
                 <div><span className="font-bold">Teklif No:</span> {proposalNo}</div>
                 <div><span className="font-bold">Tarih:</span> {proposalDate}</div>
@@ -431,7 +452,7 @@ export default function YeniTeklifPage() {
           {items.length > 0 && (
             <table className="w-full text-sm mb-8">
               <thead>
-                <tr className={`${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white`}>
+                <tr className={`${brand.buttonColor} text-white`}>
                   <th className="py-3 px-3 text-center w-10 text-[11px] font-semibold tracking-wide uppercase">#</th>
                   {!isCompactMode && <th className="py-3 px-3 w-20 text-[11px] font-semibold tracking-wide uppercase">Görsel</th>}
                   <th className="py-3 px-3 text-left text-[11px] font-semibold tracking-wide uppercase">Ürün Adı</th>
@@ -696,14 +717,14 @@ export default function YeniTeklifPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm text-gray-900 line-clamp-1 group-hover:text-blue-700">{p.name}</div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        {(p as any).manufacturer && (
-                          <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">{(p as any).manufacturer}</span>
+                        {p.manufacturer && (
+                          <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">{p.manufacturer}</span>
                         )}
                         {p.category && (
                           <span className="text-[10px] text-gray-400 line-clamp-1">{p.category.split('>').pop()?.trim()}</span>
                         )}
-                        {(p as any).sku && (
-                          <span className="text-[10px] text-gray-400 font-mono">{(p as any).sku}</span>
+                        {p.sku && (
+                          <span className="text-[10px] text-gray-400 font-mono">{p.sku}</span>
                         )}
                       </div>
                     </div>
@@ -730,7 +751,7 @@ export default function YeniTeklifPage() {
             <input type="number" value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="1" min="1" />
           </div>
           <div>
-            <button onClick={() => addItem()} className={`w-full py-2 rounded-lg text-white text-sm font-bold flex items-center justify-center gap-2 ${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} hover:opacity-90`}>
+            <button onClick={() => addItem()} className={`w-full py-2 rounded-lg text-white text-sm font-bold flex items-center justify-center gap-2 ${brand.buttonColor} hover:opacity-90`}>
               <Plus className="w-4 h-4" /> Ekle
             </button>
           </div>

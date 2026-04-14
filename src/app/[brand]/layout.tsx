@@ -45,7 +45,7 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
 
       {/* Sidebar */}
       <aside className={`fixed lg:sticky top-0 left-0 h-screen w-64 bg-white border-r border-gray-200 z-50 transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`}>
-        <div className={`p-4 border-b border-gray-200 ${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'}`}>
+        <div className={`p-4 border-b border-gray-200 ${brand.sidebarBg}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img

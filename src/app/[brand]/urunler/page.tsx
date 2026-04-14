@@ -39,7 +39,7 @@ export default function UrunlerPage() {
   const manufacturers = useMemo(() => {
     const mfrs = new Set<string>();
     allBrandProducts.forEach((p) => {
-      const mfr = (p as any).manufacturer;
+      const mfr = p.manufacturer;
       if (mfr) mfrs.add(mfr);
     });
     return Array.from(mfrs).sort();
@@ -52,8 +52,8 @@ export default function UrunlerPage() {
         const s = search.toLowerCase();
         const matchName = p.name.toLowerCase().includes(s);
         const matchCat = (p.category || '').toLowerCase().includes(s);
-        const matchSku = ((p as any).sku || '').toLowerCase().includes(s);
-        const matchMfr = ((p as any).manufacturer || '').toLowerCase().includes(s);
+        const matchSku = (p.sku || '').toLowerCase().includes(s);
+        const matchMfr = (p.manufacturer || '').toLowerCase().includes(s);
         if (!matchName && !matchCat && !matchSku && !matchMfr) return false;
       }
       if (selectedCategory) {
@@ -61,7 +61,7 @@ export default function UrunlerPage() {
         if (topCat !== selectedCategory) return false;
       }
       if (selectedManufacturer) {
-        if ((p as any).manufacturer !== selectedManufacturer) return false;
+        if (p.manufacturer !== selectedManufacturer) return false;
       }
       return true;
     });
@@ -216,7 +216,7 @@ export default function UrunlerPage() {
             <FileSpreadsheet className="w-4 h-4" /> CSV Yükle
           </button>
           <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: '', description: '', price: '', cost: '', image: '', product_link: '', category: '', currency: 'TRY' }); }}
-            className={`${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2`}>
+            className={`${brand.buttonColor} text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2`}>
             <Plus className="w-4 h-4" /> Yeni Ürün
           </button>
         </div>
@@ -321,7 +321,7 @@ export default function UrunlerPage() {
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50">İptal</button>
-                <button onClick={handleSave} className={`px-4 py-2 rounded-lg text-white text-sm font-bold hover:opacity-90 ${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} flex items-center gap-2`}>
+                <button onClick={handleSave} className={`px-4 py-2 rounded-lg text-white text-sm font-bold hover:opacity-90 ${brand.buttonColor} flex items-center gap-2`}>
                   <Save className="w-4 h-4" /> Kaydet
                 </button>
               </div>
@@ -370,10 +370,10 @@ export default function UrunlerPage() {
                     <td className="py-2 px-3">
                       <div className="font-semibold text-gray-900 line-clamp-1">{p.name}</div>
                       {p.description && <div className="text-xs text-gray-400 line-clamp-1 max-w-md">{p.description}</div>}
-                      {(p as any).sku && <div className="text-[10px] text-gray-400 font-mono">SKU: {(p as any).sku}</div>}
+                      {p.sku && <div className="text-[10px] text-gray-400 font-mono">SKU: {p.sku}</div>}
                     </td>
                     <td className="py-2 px-3 hidden lg:table-cell">
-                      <span className="text-xs text-gray-500">{(p as any).manufacturer || '-'}</span>
+                      <span className="text-xs text-gray-500">{p.manufacturer || '-'}</span>
                     </td>
                     <td className="py-2 px-3 hidden md:table-cell">
                       <span className="text-xs text-gray-500 line-clamp-1">{p.category || '-'}</span>
@@ -423,7 +423,7 @@ export default function UrunlerPage() {
                       onClick={() => setPage(pageNum)}
                       className={`w-8 h-8 rounded-lg text-xs font-bold transition ${
                         pageNum === safePage
-                          ? `${brand.id === 'mutpro' ? 'bg-[#040023]' : 'bg-red-600'} text-white`
+                          ? `${brand.buttonColor} text-white`
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
                     >

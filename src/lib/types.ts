@@ -9,6 +9,8 @@ export interface Product {
   product_link: string;
   category: string;
   currency: string;
+  manufacturer?: string;
+  sku?: string;
   created_at?: string;
   updated_at?: string;
 }
