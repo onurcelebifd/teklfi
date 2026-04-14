@@ -138,7 +138,7 @@ export default function UrunlerPage() {
         const discPrice = parseFloat(row['İndirimli Fiyatı'] || row['İndirimli Fiyat'] || '0') || 0;
         priceRaw = discPrice > 0 ? discPrice : salePrice;
         costRaw = parseFloat(row['Alış Fiyatı'] || '0') || 0;
-        image = (row['Resim URL'] || '').toString().trim();
+        image = (row['Resim URL'] || '').toString().trim().split(';')[0].trim();
         const slug = (row['Slug'] || '').toString().trim();
         productLink = slug ? `https://www.mutpro.com/${slug}` : '';
         const catRaw = (row['Kategoriler'] || '').toString().trim();

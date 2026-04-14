@@ -264,11 +264,9 @@ export default function YeniTeklifPage() {
     setShowNewProductForm(false);
   };
 
-  // Calculations — Girilen fiyatlar KDV dahil, /1.20 ile KDV hariç bulunur
+  // Calculations — Girilen fiyatlar KDV hariç (net)
   const KDV_RATE = 0.20;
-  // items.total zaten brüt (KDV dahil) fiyat x adet
-  const brutTotal = items.reduce((sum, i) => sum + i.total, 0); // KDV dahil toplam
-  const subTotal = brutTotal / (1 + KDV_RATE); // KDV hariç ara toplam
+  const subTotal = items.reduce((sum, i) => sum + i.total, 0); // KDV hariç ara toplam
   const discountedSubTotal = subTotal - discountValue;
   const kdvTotal = discountedSubTotal * KDV_RATE;
   const finalTotal = discountedSubTotal + kdvTotal; // Genel Toplam (KDV dahil)
@@ -470,9 +468,8 @@ export default function YeniTeklifPage() {
               </thead>
               <tbody>
                 {items.map((item, idx) => {
-                  const brutUnitPrice = item.price * (1 - item.item_discount / 100);
-                  const netUnitPrice = brutUnitPrice / (1 + KDV_RATE);
-                  const netLineTotal = item.total / (1 + KDV_RATE);
+                  const netUnitPrice = item.price * (1 - item.item_discount / 100);
+                  const netLineTotal = item.total;
                   const isHidden = globalHidePrices || item.hide_price;
                   return (
                     <tr key={item.id} className={`border-b border-gray-100 ${item.shipped ? 'line-through opacity-50' : ''}`}>
@@ -850,9 +847,8 @@ export default function YeniTeklifPage() {
             </thead>
             <tbody>
               {items.map((item, idx) => {
-                const brutUnitPrice = item.price * (1 - item.item_discount / 100);
-                const netUnitPrice = brutUnitPrice / (1 + KDV_RATE);
-                const netLineTotal = item.total / (1 + KDV_RATE);
+                const netUnitPrice = item.price * (1 - item.item_discount / 100);
+                const netLineTotal = item.total;
                 const itemProfit = (netUnitPrice - item.cost) * item.quantity;
                 const itemProfitPercent = item.cost > 0 ? ((netUnitPrice - item.cost) / item.cost) * 100 : 100;
                 return (
@@ -889,13 +885,12 @@ export default function YeniTeklifPage() {
                           value={Math.round(netUnitPrice * 100) / 100}
                           onChange={(e) => {
                             const netVal = parseFloat(e.target.value) || 0;
-                            const grossVal = netVal * (1 + KDV_RATE);
-                            updateItem(item.id, 'price', grossVal.toFixed(2));
+                            updateItem(item.id, 'price', netVal.toFixed(2));
                           }}
                           className="w-28 text-right text-base font-bold text-gray-800 bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 outline-none transition"
                         />
                       </div>
-                      <div className="text-[9px] text-gray-400 mt-0.5 text-right">KDV Dahil: {formatCurrency(item.price, sym)}</div>
+                      <div className="text-[9px] text-gray-400 mt-0.5 text-right">KDV Dahil: {formatCurrency(netUnitPrice * (1 + KDV_RATE), sym)}</div>
                       <div className="flex items-center gap-1 mt-1 justify-end">
                         <span className="text-[10px] text-red-400">İnd%:</span>
                         <input type="number" value={item.item_discount} onChange={(e) => updateItem(item.id, 'item_discount', e.target.value)} className="w-10 text-right text-xs border-b border-gray-200 outline-none text-red-500 font-bold" placeholder="0" />
