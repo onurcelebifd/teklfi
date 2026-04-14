@@ -194,7 +194,10 @@ export default function TekliflerPage() {
           imported++;
         }
         if (newProposals.length > 0) {
-          setProposals([...newProposals, ...proposals]);
+          // Her teklifi addProposal ile ekle (Supabase senkronizasyonu için)
+          for (const p of newProposals) {
+            addProposal(p);
+          }
         }
         alert(`${imported} teklif başarıyla içe aktarıldı!`);
       } catch (err) {

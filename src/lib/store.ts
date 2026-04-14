@@ -125,7 +125,7 @@ export const useAppStore = create<AppState>()(
           return;
         }
         if (data) {
-          const proposals: Proposal[] = data.map((row: any) => ({
+          const supabaseProposals: Proposal[] = data.map((row: any) => ({
             id: row.id,
             brand_id: row.brand_id,
             proposal_no: row.proposal_no || '',
@@ -145,7 +145,10 @@ export const useAppStore = create<AppState>()(
             status: row.status || 'draft',
             total: row.total || 0,
           }));
-          set({ proposals });
+          // Local teklifleri koru: Supabase'de olmayan local teklifleri birleştir
+          const supabaseIds = new Set(supabaseProposals.map((p) => p.id));
+          const localOnly = get().proposals.filter((p) => !supabaseIds.has(p.id));
+          set({ proposals: [...supabaseProposals, ...localOnly] });
         }
       },
 
