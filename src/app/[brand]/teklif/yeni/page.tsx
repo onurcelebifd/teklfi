@@ -48,11 +48,14 @@ export default function YeniTeklifPage() {
   const [currency, setCurrency] = useState('TRY');
   const [inputCurrency] = useState('EUR'); // Ürünler EUR bazlı gelir
   const [discountValue, setDiscountValue] = useState(0);
+  const [shippingCost, setShippingCost] = useState(0);
   const [includeVAT] = useState(true); // KDV her zaman dahil mantığı
   const [globalHidePrices, setGlobalHidePrices] = useState(false);
   const [preparedBy, setPreparedBy] = useState('');
+  const [showIban, setShowIban] = useState(false);
+  const [selectedIban, setSelectedIban] = useState<number>(0); // 0=hepsi, 1=kurumsal, 2=bireysel
   const [conditions, setConditions] = useState(
-    `• ${getValidityText()}\n• Ödeme: Sipariş ile birlikte.\n• Teslimat: Stok durumuna göre 1-4 hafta.\n• Fiyatlara KDV dahil değildir.\n• Nakliye alıcıya aittir.`
+    `- Bu teklif 3 gün süreyle geçerlidir.\n- Teslimat süresi stok durumuna göre değişiklik gösterebilir.\n- Fiyatlarımıza KDV hariçtir (Listede hariç gösterilir, toplamda eklenir).`
   );
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false);
@@ -269,7 +272,7 @@ export default function YeniTeklifPage() {
   const subTotal = items.reduce((sum, i) => sum + i.total, 0); // KDV hariç ara toplam
   const discountedSubTotal = subTotal - discountValue;
   const kdvTotal = discountedSubTotal * KDV_RATE;
-  const finalTotal = discountedSubTotal + kdvTotal; // Genel Toplam (KDV dahil)
+  const finalTotal = discountedSubTotal + kdvTotal + shippingCost; // Genel Toplam (KDV dahil + kargo)
   const totalCost = items.reduce((sum, i) => sum + i.cost * i.quantity, 0);
   const netProfit = discountedSubTotal - totalCost;
   const profitMargin = discountedSubTotal > 0 ? (netProfit / discountedSubTotal) * 100 : 0;
@@ -497,7 +500,7 @@ export default function YeniTeklifPage() {
             </table>
           )}
 
-          {/* Totals — KDV hariç ara toplam + KDV satırı + Genel Toplam */}
+          {/* Totals — KDV hariç ara toplam + KDV satırı + Kargo + Genel Toplam */}
           {!globalHidePrices && (
             <div className="flex justify-end mb-8">
               <div className="w-80 space-y-2 text-sm">
@@ -505,8 +508,32 @@ export default function YeniTeklifPage() {
                 {discountValue > 0 && <div className="flex justify-between text-red-600"><span>İndirim:</span><span>-{formatCurrency(discountValue, sym)}</span></div>}
                 {discountValue > 0 && <div className="flex justify-between border-t pt-1"><span className="text-gray-600">İndirimli Toplam:</span><span className="font-semibold">{formatCurrency(discountedSubTotal, sym)}</span></div>}
                 <div className="flex justify-between"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>
+                {shippingCost > 0 && <div className="flex justify-between"><span className="text-gray-600">Kargo / Taşıma Bedeli:</span><span>{formatCurrency(shippingCost, sym)}</span></div>}
                 <div className="flex justify-between text-lg font-extrabold border-t-2 border-gray-800 pt-2 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
                 <div className="text-right text-xs text-gray-500 italic">{numberToText(finalTotal, currency)}</div>
+              </div>
+            </div>
+          )}
+
+          {/* IBAN / Ödeme Bilgileri */}
+          {showIban && (
+            <div className="mb-6 border border-gray-200 rounded-lg p-4">
+              <h4 className="font-bold text-gray-900 uppercase mb-3 text-xs">Ödeme Bilgileri</h4>
+              <div className="space-y-3 text-xs">
+                {(selectedIban === 0 || selectedIban === 1) && (
+                  <div className="border-l-4 border-blue-500 pl-3">
+                    <p className="font-bold text-gray-800">GÜÇLÜ REKLAM METAL ENDÜSTRİYEL TİCARET LİMİTED ŞİRKETİ</p>
+                    <p className="font-mono text-gray-600 mt-0.5">TR43 0006 7010 0000 0011 6944 20</p>
+                    <p className="text-gray-500">Yapı Kredi Bankası</p>
+                  </div>
+                )}
+                {(selectedIban === 0 || selectedIban === 2) && (
+                  <div className="border-l-4 border-green-500 pl-3">
+                    <p className="font-bold text-gray-800">Buse Turancı</p>
+                    <p className="font-mono text-gray-600 mt-0.5">TR37 0006 7010 0000 0021 0036 18</p>
+                    <p className="text-gray-500">Yapı Kredi Bankası</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -944,9 +971,9 @@ export default function YeniTeklifPage() {
 
           {/* Totals Box */}
           <div className="w-full max-w-xs space-y-3">
-            <div className="flex justify-between text-sm text-gray-600"><span>Ara Toplam (KDV Hariç):</span><span className="font-semibold">{formatCurrency(subTotal, sym)}</span></div>
+            <div className="flex justify-between text-sm text-gray-600"><span>Ara Toplam:</span><span className="font-semibold">{formatCurrency(subTotal, sym)}</span></div>
             <div className="flex justify-between text-sm items-center">
-              <span className="text-gray-600">Genel İndirim:</span>
+              <span className="text-gray-600">Genel İskonto:</span>
               <div className="flex items-center gap-2">
                 <input type="number" min="0" value={discountValue} onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)} className="w-20 text-right border-b border-gray-300 outline-none bg-transparent text-sm font-semibold" />
                 <span className="text-red-500 font-semibold text-sm">-{formatCurrency(discountValue, sym)}</span>
@@ -954,11 +981,36 @@ export default function YeniTeklifPage() {
             </div>
             {discountValue > 0 && <div className="flex justify-between text-sm border-t border-dashed pt-2"><span className="text-gray-600">İndirimli Ara Toplam:</span><span className="font-semibold">{formatCurrency(discountedSubTotal, sym)}</span></div>}
             <div className="flex justify-between text-sm"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>
+            <div className="flex justify-between text-sm items-center">
+              <span className="text-gray-600">Kargo / Taşıma Bedeli:</span>
+              <div className="flex items-center gap-1">
+                <input type="number" min="0" value={shippingCost} onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)} className="w-20 text-right border-b border-gray-300 outline-none bg-transparent text-sm font-semibold" />
+                <span className="text-sm">{formatCurrency(shippingCost, sym)}</span>
+              </div>
+            </div>
             <div className="flex justify-between text-xl font-extrabold text-gray-900 border-t-2 border-gray-800 pt-3 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
             <div className="text-right text-xs text-gray-500 italic">{numberToText(finalTotal, currency)}</div>
           </div>
         </div>
       )}
+
+      {/* IBAN / Ödeme Bilgileri Ayarı */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-gray-700 uppercase">Ödeme Bilgileri (IBAN)</h3>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={showIban} onChange={(e) => setShowIban(e.target.checked)} className="accent-blue-600" />
+            <label className="text-xs font-bold text-gray-500">Teklifte Göster</label>
+          </div>
+        </div>
+        {showIban && (
+          <div className="flex gap-3">
+            <button onClick={() => setSelectedIban(0)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${selectedIban === 0 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>Her İkisi</button>
+            <button onClick={() => setSelectedIban(1)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${selectedIban === 1 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>Kurumsal (Güçlü Reklam)</button>
+            <button onClick={() => setSelectedIban(2)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${selectedIban === 2 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>Bireysel (Buse Turancı)</button>
+          </div>
+        )}
+      </div>
 
       {/* Conditions */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
