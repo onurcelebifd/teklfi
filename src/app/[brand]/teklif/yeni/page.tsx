@@ -55,7 +55,7 @@ export default function YeniTeklifPage() {
   const [showIban, setShowIban] = useState(false);
   const [selectedIban, setSelectedIban] = useState<number>(0); // 0=hepsi, 1=kurumsal, 2=bireysel
   const [conditions, setConditions] = useState(
-    `- Bu teklif 3 gün süreyle geçerlidir.\n- Teslimat süresi stok durumuna göre değişiklik gösterebilir.\n- Fiyatlarımıza KDV hariçtir (Listede hariç gösterilir, toplamda eklenir).`
+    `- Bu teklif 3 gün süreyle geçerlidir.\n- Stok durumuna göre tarafınıza bilgilendirilmektedir.\n- Fiyatlarımıza KDV hariçtir (Listede hariç gösterilir, toplamda eklenir).`
   );
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false);
