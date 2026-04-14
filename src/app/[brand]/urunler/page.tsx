@@ -113,86 +113,215 @@ export default function UrunlerPage() {
     if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) removeProduct(id);
   };
 
-  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Satırlardan ürün listesi oluştur (CSV veya XLSX rows)
+  const processRows = (rows: any[], isIkasFormat: boolean, eurRate: number) => {
+    const parsed: Product[] = [];
+    const seen = new Set<string>();
+
+    for (const row of rows) {
+      let name = '';
+      let description = '';
+      let priceRaw = 0;
+      let costRaw = 0;
+      let image = '';
+      let productLink = '';
+      let category = '';
+      let sku = '';
+      let manufacturer = '';
+      let sourceCurrency = 'TRY';
+
+      if (isIkasFormat) {
+        // ikas Excel formatı
+        name = (row['İsim'] || row['isim'] || '').toString().trim();
+        description = (row['Açıklama'] || '').toString().trim();
+        const salePrice = parseFloat(row['Satış Fiyatı'] || row['Satış Fiyatı'] || '0') || 0;
+        const discPrice = parseFloat(row['İndirimli Fiyatı'] || row['İndirimli Fiyat'] || '0') || 0;
+        priceRaw = discPrice > 0 ? discPrice : salePrice;
+        costRaw = parseFloat(row['Alış Fiyatı'] || '0') || 0;
+        image = (row['Resim URL'] || '').toString().trim();
+        const slug = (row['Slug'] || '').toString().trim();
+        productLink = slug ? `https://www.mutpro.com/${slug}` : '';
+        const catRaw = (row['Kategoriler'] || '').toString().trim();
+        if (catRaw) {
+          const parts = catRaw.split(';')[0].split('>');
+          category = parts.length >= 2 ? parts[1].trim() : parts[0].trim();
+        }
+        sku = (row['SKU'] || '').toString().trim();
+        manufacturer = (row['Marka'] || '').toString().trim();
+        const deleted = (row['Silindi mi?'] || '').toString().trim().toUpperCase();
+        if (deleted === 'TRUE') continue;
+        sourceCurrency = 'EUR';
+      } else {
+        // Genel CSV/XLSX formatı
+        name = (row['Ürün Adı'] || row['name'] || row['Name'] || row['İsim'] || row['urun_adi'] || '').toString().trim();
+        description = (row['Açıklama'] || row['description'] || row['Description'] || '').toString().trim();
+        priceRaw = parseFloat(row['Fiyat'] || row['price'] || row['Price'] || row['Satış Fiyatı'] || '0') || 0;
+        costRaw = parseFloat(row['Maliyet'] || row['cost'] || row['Cost'] || row['Alış Fiyatı'] || '0') || 0;
+        image = (row['Görsel'] || row['image'] || row['Image'] || row['Görsel URL'] || row['Resim URL'] || '').toString().trim();
+        productLink = (row['Link'] || row['url'] || row['URL'] || row['Ürün Linki'] || '').toString().trim();
+        category = (row['Kategori'] || row['category'] || row['Category'] || row['Kategoriler'] || '').toString().trim();
+        sku = (row['SKU'] || row['sku'] || row['Ürün Kodu'] || '').toString().trim();
+        manufacturer = (row['Marka'] || row['manufacturer'] || row['Üretici'] || row['Brand'] || '').toString().trim();
+        sourceCurrency = (row['Para Birimi'] || row['currency'] || 'TRY').toString().trim().toUpperCase();
+      }
+
+      if (!name) continue;
+
+      // Varyant birleştirme: aynı isimli ürünlerin SKU'larını birleştir
+      const nameKey = name.toLowerCase();
+      if (seen.has(nameKey)) {
+        // SKU ekle
+        if (sku) {
+          const existing = parsed.find(p => p.name.toLowerCase() === nameKey);
+          if (existing && existing.sku && !existing.sku.includes(sku)) {
+            existing.sku = existing.sku + ', ' + sku;
+          } else if (existing && !existing.sku) {
+            existing.sku = sku;
+          }
+        }
+        continue;
+      }
+      seen.add(nameKey);
+
+      // Fiyat dönüşümü: EUR/USD/GBP -> TRY
+      let priceTry = priceRaw;
+      let costTry = costRaw;
+      if (sourceCurrency === 'EUR') {
+        priceTry = Math.round(priceRaw * eurRate * 100) / 100;
+        costTry = Math.round(costRaw * eurRate * 100) / 100;
+      } else if (sourceCurrency === 'USD') {
+        const usdRate = eurRate * 0.92; // yaklaşık
+        priceTry = Math.round(priceRaw * usdRate * 100) / 100;
+        costTry = Math.round(costRaw * usdRate * 100) / 100;
+      }
+
+      parsed.push({
+        id: `upload-${Date.now()}-${Math.random().toString(36).substr(2, 7)}`,
+        brand_id: brandId,
+        name,
+        description,
+        price: priceTry,
+        cost: costTry,
+        image,
+        product_link: productLink,
+        category,
+        currency: 'TRY',
+        sku,
+        manufacturer,
+      });
+    }
+    return parsed;
+  };
+
+  // Upsert mantığı: mevcut ürünleri güncelle, yenileri ekle
+  const upsertProducts = (newRows: Product[]) => {
+    if (newRows.length === 0) {
+      alert('Dosyada uygun ürün verisi bulunamadı. Sütun başlıklarını kontrol edin.');
+      return;
+    }
+
+    const existingBrandProducts = products.filter(p => p.brand_id === brandId);
+    const otherBrandProducts = products.filter(p => p.brand_id !== brandId);
+    let added = 0;
+    let updated = 0;
+    let unchanged = 0;
+
+    const updatedBrandProducts = [...existingBrandProducts];
+
+    for (const newProduct of newRows) {
+      const existingIdx = updatedBrandProducts.findIndex(
+        p => p.name.toLowerCase().trim() === newProduct.name.toLowerCase().trim()
+      );
+
+      if (existingIdx >= 0) {
+        const existing = updatedBrandProducts[existingIdx];
+        const priceChanged = existing.price !== newProduct.price;
+        const costChanged = existing.cost !== newProduct.cost;
+        const skuChanged = newProduct.sku && existing.sku !== newProduct.sku;
+        const mfrChanged = newProduct.manufacturer && existing.manufacturer !== newProduct.manufacturer;
+
+        if (priceChanged || costChanged || skuChanged || mfrChanged) {
+          updatedBrandProducts[existingIdx] = {
+            ...existing,
+            price: newProduct.price,
+            cost: newProduct.cost,
+            image: newProduct.image || existing.image,
+            product_link: newProduct.product_link || existing.product_link,
+            category: newProduct.category || existing.category,
+            sku: newProduct.sku || existing.sku,
+            manufacturer: newProduct.manufacturer || existing.manufacturer,
+          };
+          updated++;
+        } else {
+          unchanged++;
+        }
+      } else {
+        updatedBrandProducts.push(newProduct);
+        added++;
+      }
+    }
+
+    const msg = `${newRows.length} ürün okundu:\n• ${added} yeni ürün eklenecek\n• ${updated} ürün güncellenecek\n• ${unchanged} ürün değişmedi (atlanacak)\n\nDevam edilsin mi?`;
+
+    if (confirm(msg)) {
+      setProducts([...otherBrandProducts, ...updatedBrandProducts]);
+      alert(`Tamamlandı! ${added} eklendi, ${updated} güncellendi.`);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const ext = file.name.split('.').pop()?.toLowerCase();
+
+    // Güncel EUR kurunu al
+    let eurRate = 41;
     try {
-      const Papa = (await import('papaparse')).default;
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          const csvRows: Product[] = [];
-          results.data.forEach((row: any) => {
-            const name = row['Ürün Adı'] || row['name'] || row['Name'] || row['urun_adi'] || '';
-            if (!name) return;
-            csvRows.push({
-              id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-              brand_id: brandId,
-              name,
-              description: row['Açıklama'] || row['description'] || row['Description'] || '',
-              price: parseFloat(row['Fiyat'] || row['price'] || row['Price'] || '0') || 0,
-              cost: parseFloat(row['Maliyet'] || row['cost'] || row['Cost'] || '0') || 0,
-              image: row['Görsel'] || row['image'] || row['Image'] || row['Görsel URL'] || '',
-              product_link: row['Link'] || row['url'] || row['URL'] || row['Ürün Linki'] || '',
-              category: row['Kategori'] || row['category'] || row['Category'] || '',
-              currency: row['Para Birimi'] || row['currency'] || 'TRY',
-            });
-          });
+      const res = await fetch('/api/tcmb-kur');
+      const data = await res.json();
+      if (data.eur) eurRate = data.eur;
+    } catch {}
 
-          if (csvRows.length === 0) {
-            alert('CSV dosyasında uygun veri bulunamadı. Sütun başlıklarını kontrol edin.');
-            return;
-          }
+    if (ext === 'xlsx' || ext === 'xls') {
+      try {
+        const XLSX = await import('xlsx');
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(sheet);
 
-          // Upsert: mevcut ürünleri güncelle, yenileri ekle
-          const existingBrandProducts = products.filter(p => p.brand_id === brandId);
-          const otherBrandProducts = products.filter(p => p.brand_id !== brandId);
-          let added = 0;
-          let updated = 0;
-          let unchanged = 0;
+        // ikas formatı tespiti: "İsim" ve "Satış Fiyatı" sütunları varsa
+        const headers = Object.keys(rows[0] || {});
+        const isIkas = headers.some(h => h === 'İsim' || h === 'isim') && headers.some(h => h.includes('Satış Fiyatı'));
 
-          const updatedBrandProducts = [...existingBrandProducts];
-
-          for (const csvProduct of csvRows) {
-            const existingIdx = updatedBrandProducts.findIndex(
-              p => p.name.toLowerCase().trim() === csvProduct.name.toLowerCase().trim()
-            );
-
-            if (existingIdx >= 0) {
-              const existing = updatedBrandProducts[existingIdx];
-              // Fiyat veya maliyet değiştiyse güncelle
-              if (existing.price !== csvProduct.price || existing.cost !== csvProduct.cost) {
-                updatedBrandProducts[existingIdx] = {
-                  ...existing,
-                  price: csvProduct.price,
-                  cost: csvProduct.cost,
-                  image: csvProduct.image || existing.image,
-                  product_link: csvProduct.product_link || existing.product_link,
-                  category: csvProduct.category || existing.category,
-                };
-                updated++;
-              } else {
-                unchanged++;
-              }
-            } else {
-              // Yeni ürün ekle
-              updatedBrandProducts.push(csvProduct);
-              added++;
-            }
-          }
-
-          const msg = `CSV'den ${csvRows.length} ürün okundu:\n• ${added} yeni ürün eklenecek\n• ${updated} ürün fiyatı güncellenecek\n• ${unchanged} ürün değişmedi (atlanacak)\n\nDevam edilsin mi?`;
-
-          if (confirm(msg)) {
-            setProducts([...otherBrandProducts, ...updatedBrandProducts]);
-            alert(`Tamamlandı! ${added} eklendi, ${updated} güncellendi.`);
-          }
-        },
-        error: () => alert('CSV dosyası okunurken hata oluştu.'),
-      });
-    } catch {
-      alert('CSV işleme hatası.');
+        const parsed = processRows(rows, isIkas, eurRate);
+        if (isIkas) {
+          alert(`ikas formatı algılandı!\nEUR/TRY kuru: ${eurRate}\n${parsed.length} benzersiz ürün bulundu.`);
+        }
+        upsertProducts(parsed);
+      } catch (err) {
+        console.error('XLSX error:', err);
+        alert('Excel dosyası okunurken hata oluştu.');
+      }
+    } else if (ext === 'csv' || ext === 'txt') {
+      try {
+        const Papa = (await import('papaparse')).default;
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const headers = Object.keys((results.data[0] as any) || {});
+            const isIkas = headers.some(h => h === 'İsim' || h === 'isim') && headers.some(h => h.includes('Satış Fiyatı'));
+            const parsed = processRows(results.data as any[], isIkas, eurRate);
+            upsertProducts(parsed);
+          },
+          error: () => alert('CSV dosyası okunurken hata oluştu.'),
+        });
+      } catch {
+        alert('CSV işleme hatası.');
+      }
+    } else {
+      alert('Desteklenen formatlar: .xlsx, .xls, .csv');
     }
     e.target.value = '';
   };
@@ -211,9 +340,9 @@ export default function UrunlerPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <input type="file" ref={fileInputRef} accept=".csv,.txt" onChange={handleCSVUpload} className="hidden" />
+          <input type="file" ref={fileInputRef} accept=".xlsx,.xls,.csv,.txt" onChange={handleFileUpload} className="hidden" />
           <button onClick={() => fileInputRef.current?.click()} className="bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center gap-2">
-            <FileSpreadsheet className="w-4 h-4" /> CSV Yükle
+            <FileSpreadsheet className="w-4 h-4" /> Excel / CSV Yükle
           </button>
           <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: '', description: '', price: '', cost: '', image: '', product_link: '', category: '', currency: 'TRY' }); }}
             className={`${brand.buttonColor} text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2`}>

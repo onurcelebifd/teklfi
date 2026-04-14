@@ -173,12 +173,19 @@ export default function YeniTeklifPage() {
     dragOverItem.current = null;
   };
 
-  // EUR -> TRY dönüşümü: Ürünler EUR bazlı, teklif TL bazlı
-  const eurToTry = (amount: number) => Math.round(amount * eurRate * 100) / 100;
+  // Ürün fiyatını TRY'ye çevir (ürün currency'sine göre)
+  const productPriceToTry = (amount: number, productCurrency?: string) => {
+    const cur = (productCurrency || 'TRY').toUpperCase();
+    if (cur === 'TRY') return amount;
+    if (cur === 'EUR') return Math.round(amount * eurRate * 100) / 100;
+    if (cur === 'USD') return Math.round(amount * usdRate * 100) / 100;
+    if (cur === 'GBP') return Math.round(amount * gbpRate * 100) / 100;
+    return amount;
+  };
 
   const addFromProduct = (p: any) => {
-    const priceInTry = eurToTry(p.price);
-    const costInTry = eurToTry(p.cost || 0);
+    const priceInTry = productPriceToTry(p.price, p.currency);
+    const costInTry = productPriceToTry(p.cost || 0, p.currency);
     addItem({ name: p.name, description: '', price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
     setShowProductSearch(false);
     setProductSearch('');
@@ -207,8 +214,8 @@ export default function YeniTeklifPage() {
   };
 
   const selectSuggestion = (p: any) => {
-    const priceInTry = eurToTry(p.price);
-    const costInTry = eurToTry(p.cost || 0);
+    const priceInTry = productPriceToTry(p.price, p.currency);
+    const costInTry = productPriceToTry(p.cost || 0, p.currency);
     addItem({ name: p.name, description: '', price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
     setShowNameSuggestions(false);
     setNameSuggestions([]);
@@ -729,8 +736,10 @@ export default function YeniTeklifPage() {
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-xs font-bold text-gray-500">€{p.price.toLocaleString('tr-TR')}</div>
-                      <div className="text-sm font-bold text-gray-900">₺{eurToTry(p.price).toLocaleString('tr-TR')}</div>
+                      <div className="text-sm font-bold text-gray-900">₺{productPriceToTry(p.price, p.currency).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</div>
+                      {p.currency && p.currency !== 'TRY' && (
+                        <div className="text-[10px] text-gray-400">{p.currency} {p.price.toLocaleString('tr-TR')}</div>
+                      )}
                       <div className="text-[10px] text-green-600 font-bold opacity-0 group-hover:opacity-100 transition">+ Ekle</div>
                     </div>
                   </button>
