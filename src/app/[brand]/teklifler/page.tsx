@@ -148,11 +148,22 @@ export default function TekliflerPage() {
           arr = [jsonData];
         }
 
+        // Mevcut teklif ID'lerini al (duplicate engelleme)
+        const existingIds = new Set(proposals.map((p) => p.id));
+        const existingNos = new Set(proposals.filter((p) => p.brand_id === brandId).map((p) => p.proposal_no));
+
         let imported = 0;
-        const newProposals: Proposal[] = [];
+        let skipped = 0;
         for (const row of arr) {
           // Eski camelCase formatından dönüştür
           const customer = row.customer || {};
+          const proposalNo = row.proposal_no || row.proposalNo || `IMP-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+
+          // Duplicate kontrolü: aynı ID veya aynı teklif no varsa atla
+          const originalId = row.id?.toString() || '';
+          if (originalId && existingIds.has(originalId)) { skipped++; continue; }
+          if (existingNos.has(proposalNo)) { skipped++; continue; }
+
           const mapItems = (items: any[]) => items.map((item: any) => ({
             id: item.id || `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             name: item.name || '',
@@ -170,10 +181,12 @@ export default function TekliflerPage() {
             shipped: item.shipped || false,
           }));
 
+          // Her zaman aktif markanın brand_id'sini kullan
+          const newId = `import-${brandId}-${Date.now()}-${Math.random().toString(36).substr(2, 7)}`;
           const proposal: Proposal = {
-            id: row.id?.toString() || `import-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-            brand_id: row.brand_id || brandId,
-            proposal_no: row.proposal_no || row.proposalNo || `IMP-${Date.now()}`,
+            id: newId,
+            brand_id: brandId,
+            proposal_no: proposalNo,
             proposal_date: row.proposal_date || row.proposalDate || new Date().toLocaleDateString('tr-TR'),
             project_name: row.project_name || row.projectName || '',
             customer_name: row.customer_name || customer.name || '',
@@ -190,16 +203,15 @@ export default function TekliflerPage() {
             status: row.status || 'approved',
             total: row.total || 0,
           };
-          newProposals.push(proposal);
+          addProposal(proposal);
+          existingIds.add(newId);
+          existingNos.add(proposalNo);
           imported++;
         }
-        if (newProposals.length > 0) {
-          // Her teklifi addProposal ile ekle (Supabase senkronizasyonu için)
-          for (const p of newProposals) {
-            addProposal(p);
-          }
-        }
-        alert(`${imported} teklif başarıyla içe aktarıldı!`);
+        const msg = skipped > 0
+          ? `${imported} teklif içe aktarıldı! (${skipped} mükerrer teklif atlandı)`
+          : `${imported} teklif başarıyla içe aktarıldı!`;
+        alert(msg);
       } catch (err) {
         console.error('JSON import error:', err);
         alert('JSON dosyası okunurken hata oluştu.');
