@@ -51,7 +51,7 @@ export default function HomePage() {
                 <p className="text-xs text-gray-400 mt-2">{brand.address.join(', ')}</p>
               </div>
 
-              <div className={`w-full py-3 rounded-xl ${brand.buttonColor} text-white font-bold text-sm tracking-wide transition-opacity group-hover:opacity-90`}>
+              <div className="w-full py-3 rounded-xl text-white font-bold text-sm tracking-wide transition-opacity group-hover:opacity-90" style={{ backgroundColor: brand.accentColor }}>
                 Panele Giriş →
               </div>
             </button>
