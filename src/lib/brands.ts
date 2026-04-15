@@ -27,6 +27,9 @@ export interface BrandConfig {
   tableHeaderTextHex: string;
   tableStripeBgHex: string;
   tableBorderHex: string;
+  proposalHeaderBg: string;
+  proposalHeaderText: string;
+  logoDark?: string;
 }
 
 export const BRANDS: Record<string, BrandConfig> = {
@@ -62,6 +65,9 @@ export const BRANDS: Record<string, BrandConfig> = {
     tableHeaderTextHex: '#040023',
     tableStripeBgHex: '#fff7ed',
     tableBorderHex: '#fed7aa',
+    proposalHeaderBg: '#040023',
+    proposalHeaderText: '#ffffff',
+    logoDark: 'https://cdn.myikas.com/images/theme-images/28f96c57-de53-42dc-96e5-988cf858f78b/image_540.webp',
   },
   guclumutfak: {
     id: 'guclumutfak',
@@ -95,6 +101,8 @@ export const BRANDS: Record<string, BrandConfig> = {
     tableHeaderTextHex: '#ffffff',
     tableStripeBgHex: '#fef2f2',
     tableBorderHex: '#fecaca',
+    proposalHeaderBg: '#ffffff',
+    proposalHeaderText: '#111827',
   },
 };
 

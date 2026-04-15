@@ -517,21 +517,24 @@ export default function YeniTeklifPage() {
 
         <div ref={printRef} className="bg-white p-6 rounded-xl shadow-lg page-container">
           {/* Header */}
-          <div className="flex justify-between items-start mb-6 pb-4 border-b-2" style={{ borderColor: brand.accentColor }}>
+          <div className="flex justify-between items-start mb-6 rounded-lg p-5" style={{ backgroundColor: brand.proposalHeaderBg, color: brand.proposalHeaderText }}>
             <div>
-              <img src={brand.logo} alt={brand.name} className="h-[96px] max-w-[320px] object-contain mb-1" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <div className="text-[10px] text-gray-500 space-y-0.5 mt-1 leading-tight">
+              <img src={brand.logoDark || brand.logo} alt={brand.name} className="h-[96px] max-w-[320px] object-contain mb-2" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <div className="text-[11px] opacity-80 space-y-0.5 mt-1 leading-tight">
                 {brand.address.map((line, i) => <div key={i}>{line}</div>)}
                 <div>{brand.phone} • {brand.email}</div>
+                <div className="font-semibold">{brand.website}</div>
               </div>
             </div>
             <div className="text-right">
-              <h1 className={`text-lg font-extrabold ${brand.textColor} mb-1`}>FİYAT TEKLİFİ</h1>
-              <div className="text-xs space-y-0.5 text-gray-600">
-                <div><span className="font-bold">Teklif No:</span> {proposalNo}</div>
-                <div><span className="font-bold">Tarih:</span> {proposalDate}</div>
-                <div><span className="font-bold">Geçerlilik:</span> {getValidityDate()}</div>
-                {preparedBy && <div><span className="font-bold">Hazırlayan:</span> {preparedBy}</div>}
+              <h1 className="text-2xl font-extrabold mb-1" style={{ color: brand.proposalHeaderText }}>TEKLİF</h1>
+              <div className="text-[10px] uppercase tracking-wider opacity-70 mb-3">PROFORMA FATURA</div>
+              <div className="text-xs space-y-1" style={{ color: brand.proposalHeaderText }}>
+                <div className="flex justify-end gap-2"><span className="font-bold opacity-70">Tarih:</span><span className="font-bold">{proposalDate}</span></div>
+                <div className="flex justify-end gap-2"><span className="font-bold opacity-70">Teklif No:</span><span className="font-bold">{proposalNo}</span></div>
+                <div className="flex justify-end gap-2"><span className="font-bold opacity-70">Geçerlilik:</span><span className="font-bold">{getValidityDate()}</span></div>
+                <div className="flex justify-end gap-2"><span className="font-bold opacity-70">Proje:</span><span className="font-bold">{projectName || '...'}</span></div>
+                {preparedBy && <div className="flex justify-end gap-2"><span className="font-bold opacity-70">Hazırlayan:</span><span className="font-bold">{preparedBy}</span></div>}
               </div>
             </div>
           </div>
@@ -582,7 +585,6 @@ export default function YeniTeklifPage() {
                       <td className="py-5 px-3">
                         <div className="font-semibold text-gray-900 text-sm">{item.name}</div>
                         {item.description && <div className="text-xs text-gray-500 italic mt-0.5">{item.description}</div>}
-                        {item.product_link && <a href={item.product_link} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline">Ürün Detayı</a>}
                       </td>
                       <td className="py-5 px-3 text-center font-semibold text-sm">{item.quantity}</td>
                       {!isHidden && <td className="py-5 px-3 text-right font-bold text-sm">{formatCurrency(convertCurrency(netUnitPrice), sym)}</td>}
