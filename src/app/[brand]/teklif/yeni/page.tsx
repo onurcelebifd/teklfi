@@ -557,7 +557,7 @@ export default function YeniTeklifPage() {
               <thead>
                 <tr className={`${brand.buttonColor} text-white`}>
                   <th className="py-3 px-3 text-center w-10 text-[11px] font-semibold tracking-wide uppercase">#</th>
-                  {!isCompactMode && <th className="py-3 px-3 w-20 text-[11px] font-semibold tracking-wide uppercase">Görsel</th>}
+                  {!isCompactMode && <th className="py-3 px-3 w-24 text-[11px] font-semibold tracking-wide uppercase">Görsel</th>}
                   <th className="py-3 px-3 text-left text-[11px] font-semibold tracking-wide uppercase">Ürün Adı</th>
                   <th className="py-3 px-3 text-center w-14 text-[11px] font-semibold tracking-wide uppercase">Adet</th>
                   {!globalHidePrices && <th className="py-3 px-3 text-right w-32 text-[11px] font-semibold tracking-wide uppercase">Birim Fiyat</th>}
@@ -571,21 +571,21 @@ export default function YeniTeklifPage() {
                   const isHidden = globalHidePrices || item.hide_price;
                   return (
                     <tr key={item.id} className={`border-b border-gray-100 ${item.shipped ? 'line-through opacity-50' : ''}`}>
-                      <td className="py-4 px-3 text-center text-gray-500 font-medium text-sm">{idx + 1}</td>
+                      <td className="py-5 px-3 text-center text-gray-500 font-medium text-sm">{idx + 1}</td>
                       {!isCompactMode && (
-                        <td className="py-3 px-3">
-                          <div className="w-16 h-16 border rounded bg-white overflow-hidden">
+                        <td className="py-4 px-3">
+                          <div className="w-20 h-20 border rounded bg-white overflow-hidden">
                             {item.image ? <img src={item.image} className="w-full h-full object-contain" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : <div className="w-full h-full bg-gray-100" />}
                           </div>
                         </td>
                       )}
-                      <td className="py-4 px-3">
+                      <td className="py-5 px-3">
                         <div className="font-medium text-gray-900 text-sm">{item.name}</div>
                         {item.description && <div className="text-xs text-gray-500 italic mt-0.5">{item.description}</div>}
                       </td>
-                      <td className="py-4 px-3 text-center font-semibold text-sm">{item.quantity}</td>
-                      {!isHidden && <td className="py-4 px-3 text-right font-bold text-sm">{formatCurrency(netUnitPrice, sym)}</td>}
-                      {!isHidden && <td className="py-4 px-3 text-right font-bold text-sm">{formatCurrency(netLineTotal, sym)}</td>}
+                      <td className="py-5 px-3 text-center font-semibold text-sm">{item.quantity}</td>
+                      {!isHidden && <td className="py-5 px-3 text-right font-bold text-sm">{formatCurrency(convertCurrency(netUnitPrice), sym)}</td>}
+                      {!isHidden && <td className="py-5 px-3 text-right font-bold text-sm">{formatCurrency(convertCurrency(netLineTotal), sym)}</td>}
                       {isHidden && !globalHidePrices && <td className="py-3 px-2 text-center text-gray-400">-</td>}
                       {isHidden && !globalHidePrices && <td className="py-3 px-2 text-center text-gray-400">-</td>}
                     </tr>
@@ -599,13 +599,13 @@ export default function YeniTeklifPage() {
           {!globalHidePrices && (
             <div className="flex justify-end mb-8">
               <div className="w-80 space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-600">Ara Toplam (KDV Hariç):</span><span className="font-semibold">{formatCurrency(subTotal, sym)}</span></div>
-                {discountValue > 0 && <div className="flex justify-between text-red-600"><span>İndirim:</span><span>-{formatCurrency(discountValue, sym)}</span></div>}
-                {discountValue > 0 && <div className="flex justify-between border-t pt-1"><span className="text-gray-600">İndirimli Toplam:</span><span className="font-semibold">{formatCurrency(discountedSubTotal, sym)}</span></div>}
-                <div className="flex justify-between"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>
-                {shippingCost > 0 && <div className="flex justify-between"><span className="text-gray-600">Kargo / Taşıma Bedeli:</span><span>{formatCurrency(shippingCost, sym)}</span></div>}
-                <div className="flex justify-between text-lg font-extrabold border-t-2 border-gray-800 pt-2 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
-                <div className="text-right text-xs text-gray-500 italic">{numberToText(finalTotal, currency)}</div>
+                <div className="flex justify-between"><span className="text-gray-600">Ara Toplam (KDV Hariç):</span><span className="font-semibold">{formatCurrency(convertCurrency(subTotal), sym)}</span></div>
+                {discountValue > 0 && <div className="flex justify-between text-red-600"><span>İndirim:</span><span>-{formatCurrency(convertCurrency(discountValue), sym)}</span></div>}
+                {discountValue > 0 && <div className="flex justify-between border-t pt-1"><span className="text-gray-600">İndirimli Toplam:</span><span className="font-semibold">{formatCurrency(convertCurrency(discountedSubTotal), sym)}</span></div>}
+                <div className="flex justify-between"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(convertCurrency(kdvTotal), sym)}</span></div>
+                {shippingCost > 0 && <div className="flex justify-between"><span className="text-gray-600">Kargo / Taşıma Bedeli:</span><span>{formatCurrency(convertCurrency(shippingCost), sym)}</span></div>}
+                <div className="flex justify-between text-lg font-extrabold border-t-2 border-gray-800 pt-2 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(convertCurrency(finalTotal), sym)}</span></div>
+                <div className="text-right text-xs text-gray-500 italic">{numberToText(convertCurrency(finalTotal), currency)}</div>
               </div>
             </div>
           )}
