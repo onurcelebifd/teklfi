@@ -25,11 +25,10 @@ export default function TekliflerPage() {
 
   // Tüm hazırlayan kişileri bul (benzersiz)
   const allPreparedBy = Array.from(new Set(
-    proposals.filter(p => p.brand_id === brandId && p.prepared_by).map(p => p.prepared_by)
+    proposals.filter(p => p.prepared_by).map(p => p.prepared_by)
   ));
 
   const brandProposals = proposals
-    .filter((p) => p.brand_id === brandId)
     .filter((p) => {
       if (statusFilter !== 'all' && p.status !== statusFilter) return false;
       if (preparedByFilter && (p.prepared_by || '') !== preparedByFilter) return false;
@@ -150,7 +149,7 @@ export default function TekliflerPage() {
 
         // Mevcut teklif ID'lerini al (duplicate engelleme)
         const existingIds = new Set(proposals.map((p) => p.id));
-        const existingNos = new Set(proposals.filter((p) => p.brand_id === brandId).map((p) => p.proposal_no));
+        const existingNos = new Set(proposals.map((p) => p.proposal_no));
 
         let imported = 0;
         let skipped = 0;

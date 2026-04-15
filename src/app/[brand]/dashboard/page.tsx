@@ -12,7 +12,7 @@ export default function DashboardPage() {
   const brand = getBrand(brandId);
   const { proposals, customers, products } = useAppStore();
 
-  const brandProposals = proposals.filter((p) => p.brand_id === brandId);
+  const brandProposals = proposals;
   const brandCustomers = customers.filter((c) => c.brand_id === brandId);
   const brandProducts = products.filter((p) => p.brand_id === brandId);
 
