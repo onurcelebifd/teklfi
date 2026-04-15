@@ -519,7 +519,7 @@ export default function YeniTeklifPage() {
           {/* Header */}
           <div className="flex justify-between items-start mb-6 pb-4 border-b-2" style={{ borderColor: brand.accentColor }}>
             <div>
-              <img src={brand.logo} alt={brand.name} className="h-[80px] max-w-[280px] object-contain mb-1" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <img src={brand.logo} alt={brand.name} className="h-[96px] max-w-[320px] object-contain mb-1" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               <div className="text-[10px] text-gray-500 space-y-0.5 mt-1 leading-tight">
                 {brand.address.map((line, i) => <div key={i}>{line}</div>)}
                 <div>{brand.phone} • {brand.email}</div>
@@ -553,9 +553,9 @@ export default function YeniTeklifPage() {
 
           {/* Items Table — Birim fiyatlar KDV hariç gösterilir */}
           {items.length > 0 && (
-            <table className={`w-full text-sm mb-8 border ${brand.tableBorderColor} rounded-lg overflow-hidden`}>
+            <table className="w-full text-sm mb-8 rounded-lg overflow-hidden" style={{ border: `1px solid ${brand.tableBorderHex}` }}>
               <thead>
-                <tr className={`${brand.tableHeaderBg} ${brand.tableHeaderText}`}>
+                <tr style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }}>
                   <th className="py-3 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
                   {!isCompactMode && <th className="py-3 px-3 w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
                   <th className="py-3 px-3 text-left text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
@@ -570,7 +570,7 @@ export default function YeniTeklifPage() {
                   const netLineTotal = item.total;
                   const isHidden = globalHidePrices || item.hide_price;
                   return (
-                    <tr key={item.id} className={`border-b ${brand.tableBorderColor} ${idx % 2 === 1 ? brand.tableStripeBg : 'bg-white'} ${item.shipped ? 'line-through opacity-50' : ''}`}>
+                    <tr key={item.id} className={item.shipped ? 'line-through opacity-50' : ''} style={{ borderBottom: `1px solid ${brand.tableBorderHex}`, backgroundColor: idx % 2 === 1 ? brand.tableStripeBgHex : '#ffffff' }}>
                       <td className="py-5 px-3 text-center text-gray-500 font-medium text-sm">{idx + 1}</td>
                       {!isCompactMode && (
                         <td className="py-4 px-3">

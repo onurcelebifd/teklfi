@@ -23,6 +23,10 @@ export interface BrandConfig {
   tableHeaderText: string;
   tableStripeBg: string;
   tableBorderColor: string;
+  tableHeaderBgHex: string;
+  tableHeaderTextHex: string;
+  tableStripeBgHex: string;
+  tableBorderHex: string;
 }
 
 export const BRANDS: Record<string, BrandConfig> = {
@@ -54,6 +58,10 @@ export const BRANDS: Record<string, BrandConfig> = {
     tableHeaderText: 'text-[#040023]',
     tableStripeBg: 'bg-orange-50',
     tableBorderColor: 'border-orange-200',
+    tableHeaderBgHex: '#f97316',
+    tableHeaderTextHex: '#040023',
+    tableStripeBgHex: '#fff7ed',
+    tableBorderHex: '#fed7aa',
   },
   guclumutfak: {
     id: 'guclumutfak',
@@ -83,6 +91,10 @@ export const BRANDS: Record<string, BrandConfig> = {
     tableHeaderText: 'text-white',
     tableStripeBg: 'bg-red-50',
     tableBorderColor: 'border-red-200',
+    tableHeaderBgHex: '#dc2626',
+    tableHeaderTextHex: '#ffffff',
+    tableStripeBgHex: '#fef2f2',
+    tableBorderHex: '#fecaca',
   },
 };
 
