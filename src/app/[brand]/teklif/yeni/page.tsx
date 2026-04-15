@@ -553,15 +553,15 @@ export default function YeniTeklifPage() {
 
           {/* Items Table — Birim fiyatlar KDV hariç gösterilir */}
           {items.length > 0 && (
-            <table className="w-full text-sm mb-8">
+            <table className={`w-full text-sm mb-8 border ${brand.tableBorderColor} rounded-lg overflow-hidden`}>
               <thead>
-                <tr className={`${brand.buttonColor} text-white`}>
-                  <th className="py-3 px-3 text-center w-10 text-[11px] font-semibold tracking-wide uppercase">#</th>
-                  {!isCompactMode && <th className="py-3 px-3 w-24 text-[11px] font-semibold tracking-wide uppercase">Görsel</th>}
-                  <th className="py-3 px-3 text-left text-[11px] font-semibold tracking-wide uppercase">Ürün Adı</th>
-                  <th className="py-3 px-3 text-center w-14 text-[11px] font-semibold tracking-wide uppercase">Adet</th>
-                  {!globalHidePrices && <th className="py-3 px-3 text-right w-32 text-[11px] font-semibold tracking-wide uppercase">Birim Fiyat</th>}
-                  {!globalHidePrices && <th className="py-3 px-3 text-right w-32 text-[11px] font-semibold tracking-wide uppercase">Toplam</th>}
+                <tr className={`${brand.tableHeaderBg} ${brand.tableHeaderText}`}>
+                  <th className="py-3 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
+                  {!isCompactMode && <th className="py-3 px-3 w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
+                  <th className="py-3 px-3 text-left text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
+                  <th className="py-3 px-3 text-center w-14 text-[11px] font-bold tracking-wide uppercase">Adet</th>
+                  {!globalHidePrices && <th className="py-3 px-3 text-right w-32 text-[11px] font-bold tracking-wide uppercase">Birim Fiyat</th>}
+                  {!globalHidePrices && <th className="py-3 px-3 text-right w-32 text-[11px] font-bold tracking-wide uppercase">Toplam Fiyat</th>}
                 </tr>
               </thead>
               <tbody>
@@ -570,7 +570,7 @@ export default function YeniTeklifPage() {
                   const netLineTotal = item.total;
                   const isHidden = globalHidePrices || item.hide_price;
                   return (
-                    <tr key={item.id} className={`border-b border-gray-100 ${item.shipped ? 'line-through opacity-50' : ''}`}>
+                    <tr key={item.id} className={`border-b ${brand.tableBorderColor} ${idx % 2 === 1 ? brand.tableStripeBg : 'bg-white'} ${item.shipped ? 'line-through opacity-50' : ''}`}>
                       <td className="py-5 px-3 text-center text-gray-500 font-medium text-sm">{idx + 1}</td>
                       {!isCompactMode && (
                         <td className="py-4 px-3">
@@ -580,8 +580,9 @@ export default function YeniTeklifPage() {
                         </td>
                       )}
                       <td className="py-5 px-3">
-                        <div className="font-medium text-gray-900 text-sm">{item.name}</div>
+                        <div className="font-semibold text-gray-900 text-sm">{item.name}</div>
                         {item.description && <div className="text-xs text-gray-500 italic mt-0.5">{item.description}</div>}
+                        {item.product_link && <a href={item.product_link} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline">Ürün Detayı</a>}
                       </td>
                       <td className="py-5 px-3 text-center font-semibold text-sm">{item.quantity}</td>
                       {!isHidden && <td className="py-5 px-3 text-right font-bold text-sm">{formatCurrency(convertCurrency(netUnitPrice), sym)}</td>}

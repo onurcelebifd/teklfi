@@ -19,6 +19,10 @@ export interface BrandConfig {
   qrUrl: string;
   slogan: string;
   brandLogos: string[];
+  tableHeaderBg: string;
+  tableHeaderText: string;
+  tableStripeBg: string;
+  tableBorderColor: string;
 }
 
 export const BRANDS: Record<string, BrandConfig> = {
@@ -46,6 +50,10 @@ export const BRANDS: Record<string, BrandConfig> = {
     qrUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://www.mutpro.com',
     slogan: 'ENDÜSTRİYEL MUTFAK EKİPMANLARI',
     brandLogos: [],
+    tableHeaderBg: 'bg-orange-500',
+    tableHeaderText: 'text-[#040023]',
+    tableStripeBg: 'bg-orange-50',
+    tableBorderColor: 'border-orange-200',
   },
   guclumutfak: {
     id: 'guclumutfak',
@@ -71,6 +79,10 @@ export const BRANDS: Record<string, BrandConfig> = {
     qrUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://www.guclumutfak.com',
     slogan: 'Endüstriyel Mutfak Ekipmanları',
     brandLogos: [],
+    tableHeaderBg: 'bg-red-600',
+    tableHeaderText: 'text-white',
+    tableStripeBg: 'bg-red-50',
+    tableBorderColor: 'border-red-200',
   },
 };
 
