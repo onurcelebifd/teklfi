@@ -109,7 +109,7 @@ export default function YeniTeklifPage() {
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
 
-  const addItem = useCallback((item?: Partial<ProposalItem>) => {
+  const addItem = useCallback((item?: Partial<ProposalItem>, skipCatalog?: boolean) => {
     const newEntry: ProposalItem = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
       name: item?.name || newItem.name || '',
@@ -131,21 +131,23 @@ export default function YeniTeklifPage() {
     setItems((prev) => [...prev, newEntry]);
     setNewItem({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
 
-    // Otomatik ürün kataloğuna kaydet (aynı isim yoksa)
-    const exists = products.some(p => p.brand_id === brandId && p.name.toLowerCase() === newEntry.name.toLowerCase());
-    if (!exists && newEntry.name.trim()) {
-      addProduct({
-        id: `auto-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        brand_id: brandId,
-        name: newEntry.name,
-        description: newEntry.description || '',
-        price: newEntry.price,
-        cost: newEntry.cost,
-        image: newEntry.image || '',
-        product_link: newEntry.product_link || '',
-        category: '',
-        currency: 'TRY',
-      });
+    // Otomatik ürün kataloğuna kaydet (aynı isim yoksa) — paket yüklemelerinde atla
+    if (!skipCatalog) {
+      const exists = products.some(p => p.brand_id === brandId && p.name.toLowerCase() === newEntry.name.toLowerCase());
+      if (!exists && newEntry.name.trim()) {
+        addProduct({
+          id: `auto-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          brand_id: brandId,
+          name: newEntry.name,
+          description: newEntry.description || '',
+          price: newEntry.price,
+          cost: newEntry.cost,
+          image: newEntry.image || '',
+          product_link: newEntry.product_link || '',
+          category: '',
+          currency: 'TRY',
+        });
+      }
     }
   }, [newItem, currency, products, brandId, addProduct]);
 
@@ -297,7 +299,7 @@ export default function YeniTeklifPage() {
     alert('Ürün kataloga kaydedildi!');
   };
 
-  // Hazır paketi teklife yükle
+  // Hazır paketi teklife yükle (kataloga eklemez)
   const loadPackageToProposal = (pkg: PackageTemplate) => {
     for (const item of pkg.items) {
       addItem({
@@ -308,7 +310,7 @@ export default function YeniTeklifPage() {
         image: item.image,
         product_link: item.product_link,
         quantity: item.quantity || 1,
-      });
+      }, true);
     }
     setShowPackageDropdown(false);
   };
