@@ -9,8 +9,13 @@ const BRAND_FILES: Record<string, string> = {
   mutpro: '/products-mutpro.json',
 };
 
+const PACKAGE_FILES: Record<string, string> = {
+  guclumutfak: '/packages-guclumutfak.json',
+  mutpro: '/packages-mutpro.json',
+};
+
 export default function ProductLoader() {
-  const { products, setProducts, setRates } = useAppStore();
+  const { products, setProducts, setRates, packages, setPackages } = useAppStore();
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -56,8 +61,34 @@ export default function ProductLoader() {
       }
     };
 
+    // Load packages for all brands
+    const loadPackages = async () => {
+      const jsonPackages: any[] = [];
+      for (const [brandId, file] of Object.entries(PACKAGE_FILES)) {
+        try {
+          const res = await fetch(file);
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            jsonPackages.push(...data);
+            console.log(`✅ ${data.length} ${brandId} paketi yüklendi.`);
+          }
+        } catch (err) {
+          console.warn(`${brandId} paketleri yüklenemedi:`, err);
+        }
+      }
+      if (jsonPackages.length > 0) {
+        const existingIds = new Set(packages.map((p) => p.id));
+        const newPkgs = jsonPackages.filter((p) => !existingIds.has(p.id));
+        if (newPkgs.length > 0) {
+          setPackages([...packages, ...newPkgs]);
+        }
+      }
+    };
+
     loadAll();
     loadRates();
+    loadPackages();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;

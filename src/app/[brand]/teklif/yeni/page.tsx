@@ -5,10 +5,10 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { getBrand } from '@/lib/brands';
 import { formatCurrency, getCurrencySymbol, numberToText, generateProposalNo, getTodayDate, getValidityDate, getValidityText } from '@/lib/helpers';
-import type { ProposalItem, Proposal } from '@/lib/types';
+import type { ProposalItem, Proposal, PackageTemplate, PackageItem } from '@/lib/types';
 import {
   Plus, Trash2, Copy, GripVertical, Eye, EyeOff, Truck, Save, FileDown,
-  Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw, Package, UserCheck, AlertCircle
+  Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw, Package, UserCheck, AlertCircle, Boxes, X, Edit2
 } from 'lucide-react';
 
 export default function YeniTeklifPage() {
@@ -16,7 +16,7 @@ export default function YeniTeklifPage() {
   const router = useRouter();
   const brandId = params.brand as string;
   const brand = getBrand(brandId);
-  const { products, customers, proposals, addProposal, updateProposal, addProduct, removeProduct, setProducts, rates } = useAppStore();
+  const { products, customers, proposals, addProposal, updateProposal, addProduct, removeProduct, setProducts, rates, packages, addPackage, removePackage, setPackages } = useAppStore();
   const searchParams = useSearchParams();
   const editId = searchParams.get('id');
   const editingProposal = editId ? proposals.find(p => p.id === editId) : null;
@@ -76,6 +76,14 @@ export default function YeniTeklifPage() {
   const [nameSuggestions, setNameSuggestions] = useState<typeof brandProducts>([]);
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Package management
+  const [showPackageManager, setShowPackageManager] = useState(false);
+  const [showPackageDropdown, setShowPackageDropdown] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<PackageTemplate | null>(null);
+  const [newPackageName, setNewPackageName] = useState('');
+  const [newPkgItem, setNewPkgItem] = useState({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
+  const brandPackages = packages.filter(p => p.brand_id === brandId);
 
   // Load existing proposal for editing
   useEffect(() => {
@@ -265,6 +273,91 @@ export default function YeniTeklifPage() {
     addItem({ name: product.name, description: '', price: priceInTry, cost: costInTry, image: product.image, product_link: product.product_link, quantity: 1 });
     setNewProduct({ name: '', category: '', price: '', cost: '', image: '', product_link: '' });
     setShowNewProductForm(false);
+  };
+
+  // Sadece kataloga kaydet (teklife ekleme)
+  const saveNewProductOnly = () => {
+    if (!newProduct.name.trim()) return alert('Ürün adı zorunludur');
+    const price = parseFloat(newProduct.price) || 0;
+    const cost = parseFloat(newProduct.cost) || 0;
+    const product = {
+      id: `custom-${Date.now()}`,
+      brand_id: brandId,
+      name: newProduct.name.trim(),
+      description: '',
+      price,
+      cost,
+      image: newProduct.image.trim(),
+      product_link: newProduct.product_link.trim(),
+      category: newProduct.category.trim(),
+      currency: newProductCurrency,
+    };
+    addProduct(product);
+    setNewProduct({ name: '', category: '', price: '', cost: '', image: '', product_link: '' });
+    alert('Ürün kataloga kaydedildi!');
+  };
+
+  // Hazır paketi teklife yükle
+  const loadPackageToProposal = (pkg: PackageTemplate) => {
+    for (const item of pkg.items) {
+      addItem({
+        name: item.name,
+        description: item.description || '',
+        price: item.price,
+        cost: item.cost,
+        image: item.image,
+        product_link: item.product_link,
+        quantity: item.quantity || 1,
+      });
+    }
+    setShowPackageDropdown(false);
+  };
+
+  // Paket yönetimi: yeni paket oluştur
+  const createNewPackage = () => {
+    if (!newPackageName.trim()) return;
+    const pkg: PackageTemplate = {
+      id: `pkg-${Date.now()}`,
+      brand_id: brandId,
+      name: newPackageName.trim(),
+      items: [],
+    };
+    addPackage(pkg);
+    setEditingPackage(pkg);
+    setNewPackageName('');
+  };
+
+  // Paket yönetimi: pakete ürün ekle
+  const addItemToPackage = () => {
+    if (!editingPackage || !newPkgItem.name.trim()) return;
+    const item: PackageItem = {
+      name: newPkgItem.name.trim(),
+      description: newPkgItem.description,
+      price: parseFloat(newPkgItem.price) || 0,
+      cost: parseFloat(newPkgItem.cost) || 0,
+      quantity: parseInt(newPkgItem.quantity) || 1,
+      image: newPkgItem.image,
+      product_link: newPkgItem.product_link,
+    };
+    const updated = { ...editingPackage, items: [...editingPackage.items, item] };
+    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    setEditingPackage(updated);
+    setNewPkgItem({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
+  };
+
+  // Paket yönetimi: paketten ürün sil
+  const removeItemFromPackage = (idx: number) => {
+    if (!editingPackage) return;
+    const updated = { ...editingPackage, items: editingPackage.items.filter((_, i) => i !== idx) };
+    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    setEditingPackage(updated);
+  };
+
+  // Paket yönetimi: paketi teklife yükle
+  const loadEditingPackageToProposal = () => {
+    if (!editingPackage) return;
+    loadPackageToProposal(editingPackage);
+    setShowPackageManager(false);
   };
 
   // Calculations — Girilen fiyatlar KDV hariç (net)
@@ -699,9 +792,32 @@ export default function YeniTeklifPage() {
 
       {/* Add Item Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h3 className="text-sm font-bold text-gray-700 uppercase">Ürün Ekle</h3>
-          <span className="text-xs text-gray-400">Ürün adı yazarak kataloğdan arayın veya manuel ekleyin</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowPackageManager(true)} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50 transition">
+              <Boxes className="w-3.5 h-3.5" /> Paketleri Yönet
+            </button>
+            <div className="relative">
+              <button onClick={() => setShowPackageDropdown(!showPackageDropdown)} className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 border border-yellow-300 rounded-lg text-xs font-bold text-yellow-700 hover:bg-yellow-100 transition">
+                <Package className="w-3.5 h-3.5" /> Hazır Paket Yükle
+              </button>
+              {showPackageDropdown && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 min-w-[240px]">
+                  {brandPackages.length === 0 ? (
+                    <div className="px-4 py-3 text-xs text-gray-400">Henüz paket yok</div>
+                  ) : (
+                    brandPackages.map(pkg => (
+                      <button key={pkg.id} onClick={() => loadPackageToProposal(pkg)} className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-50 transition">
+                        <div className="font-semibold text-sm text-gray-900">{pkg.name}</div>
+                        <div className="text-[10px] text-gray-400">{pkg.items.length} Ürün</div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
@@ -840,9 +956,12 @@ export default function YeniTeklifPage() {
                 <label className="block text-xs font-bold text-gray-500 mb-1">Ürün Linki</label>
                 <input type="text" value={newProduct.product_link} onChange={(e) => setNewProduct({ ...newProduct, product_link: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="https://..." />
               </div>
-              <div className="flex items-end">
-                <button onClick={saveNewProduct} className="w-full py-2 rounded-lg text-white text-sm font-bold flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
-                  <Save className="w-4 h-4" /> Kaydet ve Ekle
+              <div className="flex items-end gap-2">
+                <button onClick={saveNewProductOnly} className="flex-1 py-2 rounded-lg text-white text-sm font-bold flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700">
+                  <Save className="w-4 h-4" /> Kaydet
+                </button>
+                <button onClick={saveNewProduct} className="flex-1 py-2 rounded-lg text-white text-sm font-bold flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
+                  <Plus className="w-4 h-4" /> Ekle
                 </button>
               </div>
             </div>
@@ -1025,6 +1144,95 @@ export default function YeniTeklifPage() {
           <button onClick={() => setIsPrintMode(true)} className="bg-gray-800 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-gray-900"><Eye className="w-5 h-5" /> Önizle ve Yazdır</button>
         </div>
       </div>
+
+      {/* Paketleri Yönet Modal */}
+      {showPackageManager && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-10 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 mb-10">
+            <div className="flex items-center justify-between p-5 border-b">
+              <h2 className="text-lg font-bold flex items-center gap-2"><Boxes className="w-5 h-5" /> Paketleri Yönet</h2>
+              <button onClick={() => { setShowPackageManager(false); setEditingPackage(null); }} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="flex min-h-[500px]">
+              {/* Sol panel: Paket listesi */}
+              <div className="w-72 border-r p-4 space-y-3 overflow-y-auto">
+                <div className="flex gap-2">
+                  <input type="text" value={newPackageName} onChange={(e) => setNewPackageName(e.target.value)} placeholder="Paket Adı" className="flex-1 p-2 border border-gray-300 rounded-lg text-sm" onKeyDown={(e) => e.key === 'Enter' && createNewPackage()} />
+                </div>
+                <button onClick={createNewPackage} className="w-full py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700">Yeni Paket Oluştur</button>
+
+                {brandPackages.map(pkg => (
+                  <div key={pkg.id} className={`p-3 rounded-xl border cursor-pointer transition ${editingPackage?.id === pkg.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <div className="font-bold text-sm text-gray-900" onClick={() => setEditingPackage(pkg)}>{pkg.name}</div>
+                    <div className="text-[10px] text-gray-400">{pkg.items.length} Ürün</div>
+                    <div className="flex items-center gap-1 mt-2">
+                      <button onClick={() => loadPackageToProposal(pkg)} className="text-[10px] text-blue-600 font-bold hover:underline">Listeye Yükle</button>
+                      <button onClick={() => setEditingPackage(pkg)} className="p-1 rounded hover:bg-gray-100"><Edit2 className="w-3 h-3 text-gray-400" /></button>
+                      <button onClick={() => { if (confirm('Bu paketi silmek istediğinize emin misiniz?')) { removePackage(pkg.id); if (editingPackage?.id === pkg.id) setEditingPackage(null); } }} className="p-1 rounded hover:bg-red-50"><Trash2 className="w-3 h-3 text-red-400" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Sağ panel: Paket düzenleme */}
+              <div className="flex-1 p-5 overflow-y-auto">
+                {editingPackage ? (
+                  <>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">{editingPackage.name}</h3>
+
+                    {/* Pakete Yeni Ürün Ekle */}
+                    <div className="border border-dashed border-gray-300 rounded-xl p-4 mb-4">
+                      <h4 className="text-xs font-bold text-gray-500 mb-3 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Pakete Yeni Ürün Ekle</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                        <input type="text" value={newPkgItem.product_link} onChange={(e) => setNewPkgItem({ ...newPkgItem, product_link: e.target.value })} placeholder="Link (Otomatik İsim)" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                        <input type="text" value={newPkgItem.name} onChange={(e) => setNewPkgItem({ ...newPkgItem, name: e.target.value })} placeholder="Ürün Adı" className="p-2 border border-gray-200 rounded-lg text-sm col-span-full" />
+                        <input type="text" value={newPkgItem.image} onChange={(e) => setNewPkgItem({ ...newPkgItem, image: e.target.value })} placeholder="Görsel URL" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                        <input type="text" value={newPkgItem.description} onChange={(e) => setNewPkgItem({ ...newPkgItem, description: e.target.value })} placeholder="Açıklama" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <input type="number" value={newPkgItem.price} onChange={(e) => setNewPkgItem({ ...newPkgItem, price: e.target.value })} placeholder="Fiyat" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                        <input type="number" value={newPkgItem.cost} onChange={(e) => setNewPkgItem({ ...newPkgItem, cost: e.target.value })} placeholder="Maliyet" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                        <input type="number" value={newPkgItem.quantity} onChange={(e) => setNewPkgItem({ ...newPkgItem, quantity: e.target.value })} placeholder="Adet" className="p-2 border border-gray-200 rounded-lg text-sm" min="1" />
+                      </div>
+                      <button onClick={addItemToPackage} className="w-full py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">Pakete Ekle</button>
+                    </div>
+
+                    {/* Paket içeriği */}
+                    <div className="space-y-2">
+                      {editingPackage.items.map((item, idx) => (
+                        <div key={idx} className="border border-gray-200 rounded-lg p-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="font-bold text-sm text-gray-900">{item.name}</div>
+                              {item.description && <div className="text-xs text-gray-400">{item.description}</div>}
+                              <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                                <span>Adet: {item.quantity}</span>
+                                <span>Fiyat: <span className="text-green-600 font-bold">{item.price.toLocaleString('tr-TR')}</span></span>
+                                <span>Mal: {item.cost.toLocaleString('tr-TR')}</span>
+                              </div>
+                            </div>
+                            <button onClick={() => removeItemFromPackage(idx)} className="p-1.5 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {editingPackage.items.length > 0 && (
+                      <button onClick={loadEditingPackageToProposal} className="w-full mt-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 flex items-center justify-center gap-2">
+                        <Package className="w-4 h-4" /> Teklife Yükle ({editingPackage.items.length} ürün)
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                    Sol taraftan bir paket seçin veya yeni paket oluşturun
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
