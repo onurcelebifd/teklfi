@@ -37,7 +37,7 @@ export const BRANDS: Record<string, BrandConfig> = {
     id: 'mutpro',
     name: 'MutPro',
     fullName: 'MUTPRO',
-    logo: '/logos/mutpro-logo.png',
+    logo: '/logos/mutpro-mavi-logo.jpeg',
     primaryColor: 'bg-[#040023]',
     bgColor: 'bg-blue-50',
     textColor: 'text-blue-700',
