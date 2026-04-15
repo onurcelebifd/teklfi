@@ -375,9 +375,9 @@ export default function YeniTeklifPage() {
 
   const convertCurrency = (amount: number) => {
     if (currency === 'TRY') return amount;
-    if (currency === 'USD') return amount / rates.usd;
-    if (currency === 'EUR') return amount / rates.eur;
-    if (currency === 'GBP') return amount / rates.gbp;
+    if (currency === 'USD') return amount / usdRate;
+    if (currency === 'EUR') return amount / eurRate;
+    if (currency === 'GBP') return amount / gbpRate;
     return amount;
   };
 
@@ -997,6 +997,8 @@ export default function YeniTeklifPage() {
               {items.map((item, idx) => {
                 const netUnitPrice = item.price * (1 - item.item_discount / 100);
                 const netLineTotal = item.total;
+                const displayUnitPrice = convertCurrency(netUnitPrice);
+                const displayLineTotal = convertCurrency(netLineTotal);
                 const itemProfit = (netUnitPrice - item.cost) * item.quantity;
                 const itemProfitPercent = item.cost > 0 ? ((netUnitPrice - item.cost) / item.cost) * 100 : 100;
                 return (
@@ -1027,32 +1029,46 @@ export default function YeniTeklifPage() {
                     </td>
                     <td className="py-3 px-2 text-right">
                       <div className="flex items-center gap-1 justify-end">
-                        <span className="text-xs text-gray-400">₺</span>
+                        <span className="text-xs text-gray-400">{sym}</span>
                         <input
                           type="number"
-                          value={Math.round(netUnitPrice * 100) / 100}
+                          value={Math.round(displayUnitPrice * 100) / 100}
                           onChange={(e) => {
-                            const netVal = parseFloat(e.target.value) || 0;
-                            updateItem(item.id, 'price', netVal.toFixed(2));
+                            const displayVal = parseFloat(e.target.value) || 0;
+                            // Dövizden TL'ye çevir → dahili fiyatı TL olarak kaydet
+                            const tryVal = currency === 'TRY' ? displayVal
+                              : currency === 'EUR' ? displayVal * eurRate
+                              : currency === 'USD' ? displayVal * usdRate
+                              : currency === 'GBP' ? displayVal * gbpRate
+                              : displayVal;
+                            updateItem(item.id, 'price', tryVal.toFixed(2));
                           }}
                           className="w-28 text-right text-base font-bold text-gray-800 bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 outline-none transition"
                         />
                       </div>
-                      <div className="text-[9px] text-gray-400 mt-0.5 text-right">KDV Dahil: {formatCurrency(netUnitPrice * (1 + KDV_RATE), sym)}</div>
+                      <div className="text-[9px] text-gray-400 mt-0.5 text-right">KDV Dahil: {formatCurrency(displayUnitPrice * (1 + KDV_RATE), sym)}</div>
                       <div className="flex items-center gap-1 mt-1 justify-end">
                         <span className="text-[10px] text-red-400">İnd%:</span>
                         <input type="number" value={item.item_discount} onChange={(e) => updateItem(item.id, 'item_discount', e.target.value)} className="w-10 text-right text-xs border-b border-gray-200 outline-none text-red-500 font-bold" placeholder="0" />
                       </div>
                     </td>
                     <td className="py-3 px-2 text-right bg-orange-50/50">
-                      <div className={`text-xs font-bold ${itemProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(itemProfit, sym)}</div>
+                      <div className={`text-xs font-bold ${itemProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(convertCurrency(itemProfit), sym)}</div>
                       <div className={`text-[10px] px-1.5 py-0.5 rounded w-fit ml-auto mt-0.5 ${itemProfitPercent > 20 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>%{itemProfitPercent.toFixed(0)}</div>
                       <div className="mt-1">
                         <span className="text-[9px] text-gray-400">Maliyet:</span>
-                        <input type="number" value={item.cost} onChange={(e) => updateItem(item.id, 'cost', e.target.value)} className="w-20 text-center text-xs bg-white border border-gray-200 rounded px-1 py-0.5 mt-0.5" placeholder="0" />
+                        <input type="number" value={Math.round(convertCurrency(item.cost) * 100) / 100} onChange={(e) => {
+                          const displayCost = parseFloat(e.target.value) || 0;
+                          const tryCost = currency === 'TRY' ? displayCost
+                            : currency === 'EUR' ? displayCost * eurRate
+                            : currency === 'USD' ? displayCost * usdRate
+                            : currency === 'GBP' ? displayCost * gbpRate
+                            : displayCost;
+                          updateItem(item.id, 'cost', tryCost.toFixed(2));
+                        }} className="w-20 text-center text-xs bg-white border border-gray-200 rounded px-1 py-0.5 mt-0.5" placeholder="0" />
                       </div>
                     </td>
-                    <td className="py-3 px-2 text-right font-bold text-gray-800">{formatCurrency(netLineTotal, sym)}</td>
+                    <td className="py-3 px-2 text-right font-bold text-gray-800">{formatCurrency(displayLineTotal, sym)}</td>
                     <td className="py-3 px-2">
                       <div className="grid grid-cols-2 gap-1 w-fit mx-auto">
                         <button onClick={() => updateItem(item.id, 'hide_price', !item.hide_price)} className={`p-1.5 rounded ${item.hide_price ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'} hover:bg-orange-200`} title="Fiyatı Gizle">
@@ -1080,11 +1096,11 @@ export default function YeniTeklifPage() {
           <div className="bg-orange-50 border border-orange-200 rounded-xl p-5 min-w-[320px] shadow-sm">
             <h4 className="text-sm font-bold text-orange-800 mb-3 border-b border-orange-200 pb-2">📊 Kâr Analizi</h4>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-gray-600">Satış Toplamı:</span><span className="font-semibold">{formatCurrency(discountedSubTotal, sym)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-600">Maliyet:</span><span className="font-semibold">{formatCurrency(totalCost, sym)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Satış Toplamı:</span><span className="font-semibold">{formatCurrency(convertCurrency(discountedSubTotal), sym)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Maliyet:</span><span className="font-semibold">{formatCurrency(convertCurrency(totalCost), sym)}</span></div>
               <div className="border-t border-orange-200 pt-2 flex justify-between bg-orange-100 p-2 rounded">
                 <span className="font-bold text-orange-900">Net Kâr:</span>
-                <span className={`font-bold text-lg ${netProfit > 0 ? 'text-green-700' : 'text-red-700'}`}>{formatCurrency(netProfit, sym)}</span>
+                <span className={`font-bold text-lg ${netProfit > 0 ? 'text-green-700' : 'text-red-700'}`}>{formatCurrency(convertCurrency(netProfit), sym)}</span>
               </div>
               <div className="flex justify-between"><span className="text-gray-500 text-xs">Marj:</span><span className={`font-bold text-sm ${profitMargin > 20 ? 'text-green-600' : 'text-orange-600'}`}>%{profitMargin.toFixed(1)}</span></div>
             </div>
@@ -1092,25 +1108,25 @@ export default function YeniTeklifPage() {
 
           {/* Totals Box */}
           <div className="w-full max-w-xs space-y-3">
-            <div className="flex justify-between text-sm text-gray-600"><span>Ara Toplam:</span><span className="font-semibold">{formatCurrency(subTotal, sym)}</span></div>
+            <div className="flex justify-between text-sm text-gray-600"><span>Ara Toplam:</span><span className="font-semibold">{formatCurrency(convertCurrency(subTotal), sym)}</span></div>
             <div className="flex justify-between text-sm items-center">
               <span className="text-gray-600">Genel İskonto:</span>
               <div className="flex items-center gap-2">
                 <input type="number" min="0" value={discountValue} onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)} className="w-20 text-right border-b border-gray-300 outline-none bg-transparent text-sm font-semibold" />
-                <span className="text-red-500 font-semibold text-sm">-{formatCurrency(discountValue, sym)}</span>
+                <span className="text-red-500 font-semibold text-sm">-{formatCurrency(convertCurrency(discountValue), sym)}</span>
               </div>
             </div>
-            {discountValue > 0 && <div className="flex justify-between text-sm border-t border-dashed pt-2"><span className="text-gray-600">İndirimli Ara Toplam:</span><span className="font-semibold">{formatCurrency(discountedSubTotal, sym)}</span></div>}
-            <div className="flex justify-between text-sm"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(kdvTotal, sym)}</span></div>
+            {discountValue > 0 && <div className="flex justify-between text-sm border-t border-dashed pt-2"><span className="text-gray-600">İndirimli Ara Toplam:</span><span className="font-semibold">{formatCurrency(convertCurrency(discountedSubTotal), sym)}</span></div>}
+            <div className="flex justify-between text-sm"><span className="text-gray-600">KDV (%20):</span><span>{formatCurrency(convertCurrency(kdvTotal), sym)}</span></div>
             <div className="flex justify-between text-sm items-center">
               <span className="text-gray-600">Kargo / Taşıma Bedeli:</span>
               <div className="flex items-center gap-1">
                 <input type="number" min="0" value={shippingCost} onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)} className="w-20 text-right border-b border-gray-300 outline-none bg-transparent text-sm font-semibold" />
-                <span className="text-sm">{formatCurrency(shippingCost, sym)}</span>
+                <span className="text-sm">{formatCurrency(convertCurrency(shippingCost), sym)}</span>
               </div>
             </div>
-            <div className="flex justify-between text-xl font-extrabold text-gray-900 border-t-2 border-gray-800 pt-3 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(finalTotal, sym)}</span></div>
-            <div className="text-right text-xs text-gray-500 italic">{numberToText(finalTotal, currency)}</div>
+            <div className="flex justify-between text-xl font-extrabold text-gray-900 border-t-2 border-gray-800 pt-3 mt-2"><span>GENEL TOPLAM:</span><span>{formatCurrency(convertCurrency(finalTotal), sym)}</span></div>
+            <div className="text-right text-xs text-gray-500 italic">{numberToText(convertCurrency(finalTotal), currency)}</div>
           </div>
         </div>
       )}
