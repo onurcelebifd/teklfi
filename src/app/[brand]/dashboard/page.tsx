@@ -112,7 +112,7 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-2">
               {recentProposals.map((p) => (
-                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition">
+                <Link key={p.id} href={`/${brandId}/teklif/yeni?id=${p.id}`} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition cursor-pointer">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-gray-800 truncate">{p.project_name || 'İsimsiz Proje'}</div>
                     <div className="text-xs text-gray-500">{p.customer_name || 'Müşteri Yok'} • {p.proposal_no}</div>
@@ -125,7 +125,7 @@ export default function DashboardPage() {
                       ₺{p.total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

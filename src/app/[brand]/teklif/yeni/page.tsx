@@ -521,7 +521,7 @@ export default function YeniTeklifPage() {
           <div className="mb-6 pb-4 border-b-2" style={{ borderColor: brand.accentColor }}>
             <div className="flex justify-between" style={{ alignItems: 'flex-start' }}>
               <div style={{ maxWidth: '55%' }}>
-                <img src={brand.logo} alt={brand.name} style={{ height: '70px', maxWidth: '280px', objectFit: 'contain', display: 'block' }} crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <img src={brand.logo} alt={brand.name} style={{ height: '88px', maxWidth: '340px', objectFit: 'contain', display: 'block' }} crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <div style={{ textAlign: 'right', paddingTop: 0 }}>
                 <h1 className={`text-lg font-extrabold ${brand.textColor}`} style={{ margin: 0, lineHeight: 1.2 }}>FİYAT TEKLİFİ</h1>
@@ -561,11 +561,11 @@ export default function YeniTeklifPage() {
               <thead>
                 <tr style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }}>
                   <th className="py-3 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
-                  {!isCompactMode && <th className="py-3 px-3 w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
-                  <th className="py-3 px-3 text-left text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
+                  {!isCompactMode && <th className="py-3 px-3 text-center w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
+                  <th className="py-3 px-3 text-center text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
                   <th className="py-3 px-3 text-center w-14 text-[11px] font-bold tracking-wide uppercase">Adet</th>
-                  {!globalHidePrices && <th className="py-3 px-3 text-right w-32 text-[11px] font-bold tracking-wide uppercase">Birim Fiyat</th>}
-                  {!globalHidePrices && <th className="py-3 px-3 text-right w-32 text-[11px] font-bold tracking-wide uppercase">Toplam Fiyat</th>}
+                  {!globalHidePrices && <th className="py-3 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Birim Fiyat</th>}
+                  {!globalHidePrices && <th className="py-3 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Toplam Fiyat</th>}
                 </tr>
               </thead>
               <tbody>
