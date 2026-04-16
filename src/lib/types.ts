@@ -29,6 +29,7 @@ export interface ProposalItem {
   id: string;
   name: string;
   description: string;
+  sku?: string;
   price: number;
   cost: number;
   quantity: number;

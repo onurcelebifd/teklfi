@@ -114,6 +114,7 @@ export default function YeniTeklifPage() {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
       name: item?.name || newItem.name || '',
       description: item?.description || newItem.description || '',
+      sku: item?.sku || '',
       price: item?.price || parseFloat(newItem.price) || 0,
       cost: item?.cost || parseFloat(newItem.cost) || 0,
       quantity: item?.quantity || parseInt(newItem.quantity) || 1,
@@ -199,7 +200,7 @@ export default function YeniTeklifPage() {
   const addFromProduct = (p: any) => {
     const priceInTry = productPriceToTry(p.price, p.currency);
     const costInTry = productPriceToTry(p.cost || 0, p.currency);
-    addItem({ name: p.name, description: '', price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
+    addItem({ name: p.name, description: '', sku: p.sku || '', price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
     setShowProductSearch(false);
     setProductSearch('');
     setShowNameSuggestions(false);
@@ -229,7 +230,7 @@ export default function YeniTeklifPage() {
   const selectSuggestion = (p: any) => {
     const priceInTry = productPriceToTry(p.price, p.currency);
     const costInTry = productPriceToTry(p.cost || 0, p.currency);
-    addItem({ name: p.name, description: '', price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
+    addItem({ name: p.name, description: '', sku: p.sku || '', price: priceInTry, cost: costInTry, image: p.image, product_link: p.product_link, quantity: 1 });
     setShowNameSuggestions(false);
     setNameSuggestions([]);
     setNewItem({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
@@ -517,22 +518,25 @@ export default function YeniTeklifPage() {
 
         <div ref={printRef} className="bg-white p-6 rounded-xl shadow-lg page-container">
           {/* Header */}
-          <div className="flex justify-between items-start mb-6 pb-4 border-b-2" style={{ borderColor: brand.accentColor }}>
-            <div>
-              <img src={brand.logo} alt={brand.name} className="h-[96px] max-w-[320px] object-contain mb-1" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <div className="text-[10px] text-gray-500 space-y-0.5 mt-1 leading-tight">
-                {brand.address.map((line, i) => <div key={i}>{line}</div>)}
-                <div>{brand.phone} • {brand.email}</div>
+          <div className="mb-6 pb-4 border-b-2" style={{ borderColor: brand.accentColor }}>
+            <div className="flex justify-between" style={{ alignItems: 'flex-start' }}>
+              <div style={{ maxWidth: '55%' }}>
+                <img src={brand.logo} alt={brand.name} style={{ height: '70px', maxWidth: '280px', objectFit: 'contain', display: 'block' }} crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              </div>
+              <div style={{ textAlign: 'right', paddingTop: 0 }}>
+                <h1 className={`text-lg font-extrabold ${brand.textColor}`} style={{ margin: 0, lineHeight: 1.2 }}>FİYAT TEKLİFİ</h1>
+                <div className="text-xs text-gray-600" style={{ marginTop: '4px' }}>
+                  <div><span className="font-bold">Teklif No:</span> {proposalNo}</div>
+                  <div><span className="font-bold">Tarih:</span> {proposalDate}</div>
+                  <div><span className="font-bold">Geçerlilik:</span> {getValidityDate()}</div>
+                  {preparedBy && <div><span className="font-bold">Hazırlayan:</span> {preparedBy}</div>}
+                </div>
               </div>
             </div>
-            <div className="text-right">
-              <h1 className={`text-lg font-extrabold ${brand.textColor} mb-1`}>FİYAT TEKLİFİ</h1>
-              <div className="text-xs space-y-0.5 text-gray-600">
-                <div><span className="font-bold">Teklif No:</span> {proposalNo}</div>
-                <div><span className="font-bold">Tarih:</span> {proposalDate}</div>
-                <div><span className="font-bold">Geçerlilik:</span> {getValidityDate()}</div>
-                {preparedBy && <div><span className="font-bold">Hazırlayan:</span> {preparedBy}</div>}
-              </div>
+            <div className="text-[10px] text-gray-500 leading-tight" style={{ marginTop: '6px' }}>
+              {brand.address.map((line, i) => <span key={i}>{line}{i < brand.address.length - 1 ? ', ' : ''}</span>)}
+              <br />{brand.phone} • {brand.email}
+              <br /><span className="font-semibold">{brand.website}</span>
             </div>
           </div>
 
@@ -581,6 +585,7 @@ export default function YeniTeklifPage() {
                       )}
                       <td className="py-5 px-3">
                         <div className="font-semibold text-gray-900 text-sm">{item.name}</div>
+                        {item.sku && <div className="text-[10px] text-gray-400 mt-0.5">Ürün Kodu: {item.sku}</div>}
                         {item.description && <div className="text-xs text-gray-500 italic mt-0.5">{item.description}</div>}
                       </td>
                       <td className="py-5 px-3 text-center font-semibold text-sm">{item.quantity}</td>
@@ -1022,6 +1027,7 @@ export default function YeniTeklifPage() {
                     )}
                     <td className="py-3 px-2 min-w-[180px]">
                       <textarea value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full bg-transparent resize-none outline-none font-medium text-gray-900" rows={1} placeholder="Ürün adı" />
+                      {item.sku && <div className="text-[10px] text-gray-400">Kod: {item.sku}</div>}
                       <textarea value={item.description} onChange={(e) => updateItem(item.id, 'description', e.target.value)} className="w-full bg-transparent resize-none outline-none text-xs text-gray-500 mt-0.5" rows={1} placeholder="Açıklama" />
                     </td>
                     <td className="py-3 px-2 text-center">
