@@ -557,15 +557,15 @@ export default function YeniTeklifPage() {
 
           {/* Items Table — Birim fiyatlar KDV hariç gösterilir */}
           {items.length > 0 && (
-            <table className="w-full text-sm mb-8 rounded-lg overflow-hidden" style={{ border: `1px solid ${brand.tableBorderHex}` }}>
+            <table className="w-full text-sm mb-8" style={{ border: `1px solid ${brand.tableBorderHex}`, borderCollapse: 'separate', borderSpacing: 0, borderRadius: '8px', overflow: 'hidden' }}>
               <thead>
-                <tr style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }}>
-                  <th className="py-3 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
-                  {!isCompactMode && <th className="py-3 px-3 text-center w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
-                  <th className="py-3 px-3 text-center text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
-                  <th className="py-3 px-3 text-center w-14 text-[11px] font-bold tracking-wide uppercase">Adet</th>
-                  {!globalHidePrices && <th className="py-3 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Birim Fiyat</th>}
-                  {!globalHidePrices && <th className="py-3 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Toplam Fiyat</th>}
+                <tr>
+                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
+                  {!isCompactMode && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
+                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
+                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-14 text-[11px] font-bold tracking-wide uppercase">Adet</th>
+                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Birim Fiyat</th>}
+                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Toplam Fiyat</th>}
                 </tr>
               </thead>
               <tbody>
