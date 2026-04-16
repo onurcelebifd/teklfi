@@ -519,13 +519,13 @@ export default function YeniTeklifPage() {
         <div ref={printRef} className="bg-white p-6 rounded-xl shadow-lg page-container">
           {/* Header */}
           <div className="mb-6 pb-4 border-b-2" style={{ borderColor: brand.accentColor }}>
-            <div className="flex justify-between" style={{ alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ maxWidth: '55%' }}>
                 <img src={brand.logo} alt={brand.name} style={{ height: '88px', maxWidth: '340px', objectFit: 'contain', display: 'block' }} crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
-              <div style={{ textAlign: 'right', paddingTop: 0 }}>
-                <h1 className={`text-lg font-extrabold ${brand.textColor}`} style={{ margin: 0, lineHeight: 1.2 }}>FİYAT TEKLİFİ</h1>
-                <div className="text-xs text-gray-600" style={{ marginTop: '4px' }}>
+              <div style={{ textAlign: 'right', paddingTop: 0, marginTop: 0 }}>
+                <h1 className={`text-lg font-extrabold ${brand.textColor}`} style={{ margin: 0, padding: 0, lineHeight: 1 }}>FİYAT TEKLİFİ</h1>
+                <div className="text-xs text-gray-600" style={{ marginTop: '6px' }}>
                   <div><span className="font-bold">Teklif No:</span> {proposalNo}</div>
                   <div><span className="font-bold">Tarih:</span> {proposalDate}</div>
                   <div><span className="font-bold">Geçerlilik:</span> {getValidityDate()}</div>
@@ -534,9 +534,9 @@ export default function YeniTeklifPage() {
               </div>
             </div>
             <div className="text-[10px] text-gray-500 leading-tight" style={{ marginTop: '6px' }}>
-              {brand.address.map((line, i) => <span key={i}>{line}{i < brand.address.length - 1 ? ', ' : ''}</span>)}
-              <br />{brand.phone} • {brand.email}
-              <br /><span className="font-semibold">{brand.website}</span>
+              {brand.address.map((line, i) => <div key={i}>{line}</div>)}
+              <div>{brand.phone} • {brand.email}</div>
+              <div className="font-semibold">{brand.website}</div>
             </div>
           </div>
 
@@ -560,12 +560,12 @@ export default function YeniTeklifPage() {
             <table className="w-full text-sm mb-8" style={{ border: `1px solid ${brand.tableBorderHex}`, borderCollapse: 'separate', borderSpacing: 0, borderRadius: '8px', overflow: 'hidden' }}>
               <thead>
                 <tr>
-                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
-                  {!isCompactMode && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
-                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
-                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-14 text-[11px] font-bold tracking-wide uppercase">Adet</th>
-                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Birim Fiyat</th>}
-                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex }} className="py-3 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Toplam Fiyat</th>}
+                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle' }} className="py-4 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
+                  {!isCompactMode && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle' }} className="py-4 px-3 text-center w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
+                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle' }} className="py-4 px-3 text-center text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
+                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle' }} className="py-4 px-3 text-center w-14 text-[11px] font-bold tracking-wide uppercase">Adet</th>
+                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle' }} className="py-4 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Birim Fiyat</th>}
+                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle' }} className="py-4 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Toplam Fiyat</th>}
                 </tr>
               </thead>
               <tbody>
