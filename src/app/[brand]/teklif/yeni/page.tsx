@@ -501,7 +501,11 @@ export default function YeniTeklifPage() {
 
   const filteredProducts = brandProducts.filter((p) => {
     if (!productSearch) return true;
-    return p.name.toLowerCase().includes(productSearch.toLowerCase());
+    const q = productSearch.toLowerCase();
+    return p.name.toLowerCase().includes(q)
+      || (p.sku || '').toLowerCase().includes(q)
+      || (p.category || '').toLowerCase().includes(q)
+      || (p.manufacturer || '').toLowerCase().includes(q);
   });
 
   if (isPrintMode) {
@@ -602,7 +606,7 @@ export default function YeniTeklifPage() {
 
           {/* Totals — KDV hariç ara toplam + KDV satırı + Kargo + Genel Toplam */}
           {!globalHidePrices && (
-            <div className="flex justify-end mb-8">
+            <div className="flex justify-end mb-8" style={{ pageBreakInside: 'avoid' }}>
               <div className="w-80 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-gray-600">Ara Toplam (KDV Hariç):</span><span className="font-semibold">{formatCurrency(convertCurrency(subTotal), sym)}</span></div>
                 {discountValue > 0 && <div className="flex justify-between text-red-600"><span>İndirim:</span><span>-{formatCurrency(convertCurrency(discountValue), sym)}</span></div>}
@@ -617,7 +621,7 @@ export default function YeniTeklifPage() {
 
           {/* IBAN / Ödeme Bilgileri */}
           {showIban && (
-            <div className="mb-6 border border-gray-200 rounded-lg p-4">
+            <div className="mb-6 border border-gray-200 rounded-lg p-4" style={{ pageBreakInside: 'avoid' }}>
               <h4 className="font-bold text-gray-900 uppercase mb-3 text-xs">Ödeme Bilgileri</h4>
               <div className="space-y-3 text-xs">
                 {(selectedIban === 0 || selectedIban === 1) && (
@@ -639,7 +643,7 @@ export default function YeniTeklifPage() {
           )}
 
           {/* Terms + Footer */}
-          <div className="grid grid-cols-2 gap-6 text-[10px] text-gray-500 border-t pt-4 mt-6">
+          <div className="grid grid-cols-2 gap-6 text-[10px] text-gray-500 border-t pt-4 mt-6" style={{ pageBreakInside: 'avoid' }}>
             <div>
               <h4 className="font-bold text-gray-900 uppercase mb-1 text-xs">Şartlar ve Koşullar</h4>
               <div className="whitespace-pre-wrap leading-relaxed">{conditions}</div>
