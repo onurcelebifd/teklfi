@@ -211,14 +211,11 @@ export default function YeniTeklifPage() {
   const handleNameInput = (value: string) => {
     setNewItem({ ...newItem, name: value });
     if (value.length >= 2 && brandProducts.length > 0) {
-      const q = value.toLowerCase();
+      const words = value.toLowerCase().split(/\s+/).filter(w => w.length > 0);
       const matches = brandProducts.filter((p) => {
-        const nameMatch = p.name.toLowerCase().includes(q);
-        const mfrMatch = (p.manufacturer || '').toLowerCase().includes(q);
-        const skuMatch = (p.sku || '').toLowerCase().includes(q);
-        const catMatch = (p.category || '').toLowerCase().includes(q);
-        return nameMatch || mfrMatch || skuMatch || catMatch;
-      }).slice(0, 15);
+        const text = [p.name, p.sku || '', p.category || '', p.manufacturer || ''].join(' ').toLowerCase();
+        return words.every(w => text.includes(w));
+      }).slice(0, 30);
       setNameSuggestions(matches);
       setShowNameSuggestions(matches.length > 0);
     } else {
@@ -501,11 +498,9 @@ export default function YeniTeklifPage() {
 
   const filteredProducts = brandProducts.filter((p) => {
     if (!productSearch) return true;
-    const q = productSearch.toLowerCase();
-    return p.name.toLowerCase().includes(q)
-      || (p.sku || '').toLowerCase().includes(q)
-      || (p.category || '').toLowerCase().includes(q)
-      || (p.manufacturer || '').toLowerCase().includes(q);
+    const words = productSearch.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const text = [p.name, p.sku || '', p.category || '', p.manufacturer || ''].join(' ').toLowerCase();
+    return words.every(w => text.includes(w));
   });
 
   if (isPrintMode) {
