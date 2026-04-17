@@ -557,7 +557,7 @@ export default function YeniTeklifPage() {
 
           {/* Items Table — Birim fiyatlar KDV hariç gösterilir */}
           {items.length > 0 && (
-            <table className="w-full text-sm mb-8" style={{ borderCollapse: 'collapse', border: `1px solid ${brand.tableBorderHex}` }}>
+            <table className="w-full text-sm mb-8" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', borderBottom: `2px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
