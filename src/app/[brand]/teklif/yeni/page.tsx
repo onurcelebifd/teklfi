@@ -447,7 +447,7 @@ export default function YeniTeklifPage() {
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+        pagebreak: { mode: ['css'] },
       };
       await html2pdf().set(opt).from(printRef.current).save();
 
@@ -541,7 +541,7 @@ export default function YeniTeklifPage() {
           </div>
 
           {/* Customer + Project */}
-          <div className="grid grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-2 gap-6 mb-8" style={{ pageBreakAfter: 'avoid' }}>
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Müşteri Bilgileri</h3>
               <div className="text-sm font-bold text-gray-900">{customerName || '-'}</div>
@@ -574,7 +574,7 @@ export default function YeniTeklifPage() {
                   const netLineTotal = item.total;
                   const isHidden = globalHidePrices || item.hide_price;
                   return (
-                    <tr key={item.id} className={item.shipped ? 'line-through opacity-50' : ''} style={{ borderBottom: `1px solid ${brand.tableBorderHex}`, backgroundColor: idx % 2 === 1 ? brand.tableStripeBgHex : '#ffffff' }}>
+                    <tr key={item.id} className={item.shipped ? 'line-through opacity-50' : ''} style={{ borderBottom: `1px solid ${brand.tableBorderHex}`, backgroundColor: idx % 2 === 1 ? brand.tableStripeBgHex : '#ffffff', pageBreakInside: 'avoid' }}>
                       <td className="py-5 px-3 text-center text-gray-500 font-medium text-sm">{idx + 1}</td>
                       {!isCompactMode && (
                         <td className="py-4 px-3">
