@@ -557,15 +557,15 @@ export default function YeniTeklifPage() {
 
           {/* Items Table — Birim fiyatlar KDV hariç gösterilir */}
           {items.length > 0 && (
-            <table className="w-full text-sm mb-8" style={{ borderCollapse: 'collapse' }}>
+            <table className="w-full text-sm mb-8" style={{ borderCollapse: 'collapse', border: `1px solid ${brand.tableBorderHex}` }}>
               <thead>
                 <tr>
-                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', border: `1px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
-                  {!isCompactMode && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', border: `1px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
-                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', border: `1px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
-                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', border: `1px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-14 text-[11px] font-bold tracking-wide uppercase">Adet</th>
-                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', border: `1px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Birim Fiyat</th>}
-                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', border: `1px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Toplam Fiyat</th>}
+                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', borderBottom: `2px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-10 text-[11px] font-bold tracking-wide uppercase">#</th>
+                  {!isCompactMode && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', borderBottom: `2px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-24 text-[11px] font-bold tracking-wide uppercase">Görsel</th>}
+                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', borderBottom: `2px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center text-[11px] font-bold tracking-wide uppercase">Ürün Adı / Açıklama (Opsiyonel)</th>
+                  <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', borderBottom: `2px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-14 text-[11px] font-bold tracking-wide uppercase">Adet</th>
+                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', borderBottom: `2px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Birim Fiyat</th>}
+                  {!globalHidePrices && <th style={{ backgroundColor: brand.tableHeaderBgHex, color: brand.tableHeaderTextHex, verticalAlign: 'middle', borderBottom: `2px solid ${brand.tableBorderHex}` }} className="py-4 px-3 text-center w-32 text-[11px] font-bold tracking-wide uppercase">Toplam Fiyat</th>}
                 </tr>
               </thead>
               <tbody>
@@ -574,25 +574,25 @@ export default function YeniTeklifPage() {
                   const netLineTotal = item.total;
                   const isHidden = globalHidePrices || item.hide_price;
                   return (
-                    <tr key={item.id} className={item.shipped ? 'line-through opacity-50' : ''} style={{ backgroundColor: idx % 2 === 1 ? brand.tableStripeBgHex : '#ffffff', pageBreakInside: 'avoid' }}>
-                      <td style={{ border: `1px solid ${brand.tableBorderHex}` }} className="py-5 px-3 text-center text-gray-500 font-medium text-sm">{idx + 1}</td>
+                    <tr key={item.id} className={item.shipped ? 'line-through opacity-50' : ''} style={{ borderBottom: `1px solid ${brand.tableBorderHex}`, backgroundColor: idx % 2 === 1 ? brand.tableStripeBgHex : '#ffffff', pageBreakInside: 'avoid' }}>
+                      <td className="py-5 px-3 text-center text-gray-500 font-medium text-sm">{idx + 1}</td>
                       {!isCompactMode && (
-                        <td style={{ border: `1px solid ${brand.tableBorderHex}` }} className="py-4 px-3">
+                        <td className="py-4 px-3">
                           <div className="w-20 h-20 border rounded bg-white overflow-hidden">
                             {item.image ? <img src={item.image} className="w-full h-full object-contain" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : <div className="w-full h-full bg-gray-100" />}
                           </div>
                         </td>
                       )}
-                      <td style={{ border: `1px solid ${brand.tableBorderHex}` }} className="py-5 px-3">
+                      <td className="py-5 px-3">
                         <div className="font-semibold text-gray-900 text-sm">{item.name}</div>
                         {item.sku && <div className="text-[10px] text-gray-400 mt-0.5">Ürün Kodu: {item.sku}</div>}
                         {item.description && <div className="text-xs text-gray-500 italic mt-0.5">{item.description}</div>}
                       </td>
-                      <td style={{ border: `1px solid ${brand.tableBorderHex}` }} className="py-5 px-3 text-center font-semibold text-sm">{item.quantity}</td>
-                      {!isHidden && <td style={{ border: `1px solid ${brand.tableBorderHex}` }} className="py-5 px-3 text-right font-bold text-sm">{formatCurrency(convertCurrency(netUnitPrice), sym)}</td>}
-                      {!isHidden && <td style={{ border: `1px solid ${brand.tableBorderHex}` }} className="py-5 px-3 text-right font-bold text-sm">{formatCurrency(convertCurrency(netLineTotal), sym)}</td>}
-                      {isHidden && !globalHidePrices && <td style={{ border: `1px solid ${brand.tableBorderHex}` }} className="py-3 px-2 text-center text-gray-400">-</td>}
-                      {isHidden && !globalHidePrices && <td style={{ border: `1px solid ${brand.tableBorderHex}` }} className="py-3 px-2 text-center text-gray-400">-</td>}
+                      <td className="py-5 px-3 text-center font-semibold text-sm">{item.quantity}</td>
+                      {!isHidden && <td className="py-5 px-3 text-right font-bold text-sm">{formatCurrency(convertCurrency(netUnitPrice), sym)}</td>}
+                      {!isHidden && <td className="py-5 px-3 text-right font-bold text-sm">{formatCurrency(convertCurrency(netLineTotal), sym)}</td>}
+                      {isHidden && !globalHidePrices && <td className="py-3 px-2 text-center text-gray-400">-</td>}
+                      {isHidden && !globalHidePrices && <td className="py-3 px-2 text-center text-gray-400">-</td>}
                     </tr>
                   );
                 })}
