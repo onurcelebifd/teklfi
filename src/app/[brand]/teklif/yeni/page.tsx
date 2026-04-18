@@ -1229,7 +1229,7 @@ export default function YeniTeklifPage() {
                     )}
                     <td className="py-3 px-2 min-w-[180px]">
                       <textarea value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full bg-transparent resize-none outline-none font-medium text-gray-900" rows={1} placeholder="Ürün adı" />
-                      {item.sku && <div className="text-[10px] text-gray-400">Kod: {item.sku}</div>}
+                      <input value={item.sku || ''} onChange={(e) => updateItem(item.id, 'sku', e.target.value)} className="w-full bg-transparent outline-none text-[10px] text-gray-400 mt-0.5" placeholder="Ürün kodu" />
                       <textarea value={item.description} onChange={(e) => updateItem(item.id, 'description', e.target.value)} className="w-full bg-transparent resize-none outline-none text-xs text-gray-500 mt-0.5" rows={1} placeholder="Açıklama" />
                     </td>
                     <td className="py-3 px-2 text-center">

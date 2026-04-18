@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { getBrand } from '@/lib/brands';
 import { formatCurrency, getCurrencySymbol } from '@/lib/helpers';
-import { Search, Trash2, Clock, CheckCircle, XCircle, Eye, Send, Upload, UserCheck, Calendar, FileText } from 'lucide-react';
+import { Search, Trash2, Clock, CheckCircle, XCircle, Eye, Send, Upload, UserCheck, Calendar, FileText, Copy } from 'lucide-react';
 import { useState, useRef } from 'react';
 import type { ProposalStatus, Proposal } from '@/lib/types';
 import { STATUS_LABELS, STATUS_COLORS } from '@/lib/types';
@@ -51,6 +51,20 @@ export default function TekliflerPage() {
 
   const handleStatusChange = (id: string, status: ProposalStatus) => {
     updateProposal(id, { status });
+  };
+
+  const duplicateProposal = (p: Proposal) => {
+    const newId = `dup-${Date.now()}-${Math.random().toString(36).substr(2, 7)}`;
+    const newNo = p.proposal_no + '-KOPYA';
+    const dup: Proposal = {
+      ...p,
+      id: newId,
+      proposal_no: newNo,
+      status: 'draft' as ProposalStatus,
+      items: p.items.map(item => ({ ...item, id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` })),
+    };
+    addProposal(dup);
+    router.push(`/${brandId}/teklif/yeni?id=${newId}`);
   };
 
   // Eski teklifleri Excel'den içe aktar
@@ -389,6 +403,7 @@ export default function TekliflerPage() {
                     <button onClick={() => handleStatusChange(p.id, 'viewed')} className="p-1.5 rounded-lg bg-yellow-50 text-yellow-600 hover:bg-yellow-100 transition" title="Görüntülendi"><Eye className="w-3.5 h-3.5" /></button>
                     <button onClick={() => handleStatusChange(p.id, 'approved')} className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition" title="Onaylandı"><CheckCircle className="w-3.5 h-3.5" /></button>
                     <button onClick={() => handleStatusChange(p.id, 'rejected')} className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition" title="Reddedildi"><XCircle className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => duplicateProposal(p)} className="p-1.5 rounded-lg bg-purple-50 text-purple-500 hover:bg-purple-100 transition" title="Çoğalt"><Copy className="w-3.5 h-3.5" /></button>
                     <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition" title="Sil"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
