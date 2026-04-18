@@ -83,6 +83,7 @@ export interface PackageItem {
   quantity: number;
   image: string;
   product_link: string;
+  currency?: 'TRY' | 'EUR' | 'USD' | 'GBP';
 }
 
 export type ProposalStatus = 'draft' | 'sent' | 'viewed' | 'approved' | 'rejected';

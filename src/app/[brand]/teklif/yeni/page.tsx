@@ -85,6 +85,9 @@ export default function YeniTeklifPage() {
   const [editingPackage, setEditingPackage] = useState<PackageTemplate | null>(null);
   const [newPackageName, setNewPackageName] = useState('');
   const [newPkgItem, setNewPkgItem] = useState({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
+  const [newPkgItemCurrency, setNewPkgItemCurrency] = useState<'TRY' | 'EUR' | 'USD' | 'GBP'>('TRY');
+  const [pkgProductSearch, setPkgProductSearch] = useState('');
+  const [showPkgProductSearch, setShowPkgProductSearch] = useState(false);
   const brandPackages = packages.filter(p => p.brand_id === brandId);
 
   // Load existing proposal for editing
@@ -340,18 +343,60 @@ export default function YeniTeklifPage() {
       quantity: parseInt(newPkgItem.quantity) || 1,
       image: newPkgItem.image,
       product_link: newPkgItem.product_link,
+      currency: newPkgItemCurrency,
     };
     const updated = { ...editingPackage, items: [...editingPackage.items, item] };
     setPackages(packages.map(p => p.id === updated.id ? updated : p));
     setEditingPackage(updated);
     setNewPkgItem({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
+    setNewPkgItemCurrency('TRY');
+    setPkgProductSearch('');
+    setShowPkgProductSearch(false);
+  };
+
+  const updatePackageItem = (idx: number, field: string, value: any) => {
+    if (!editingPackage) return;
+    const updatedItems = editingPackage.items.map((item, i) => {
+      if (i !== idx) return item;
+      return { ...item, [field]: field === 'price' || field === 'cost' ? (parseFloat(value) || 0) : field === 'quantity' ? (parseInt(value) || 1) : value };
+    });
+    const updated = { ...editingPackage, items: updatedItems };
+    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    setEditingPackage(updated);
+  };
+
+  const renamePackage = (newName: string) => {
+    if (!editingPackage) return;
+    const updated = { ...editingPackage, name: newName };
+    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    setEditingPackage(updated);
+  };
+
+  const addProductToPackage = (product: any) => {
+    if (!editingPackage) return;
+    const item: PackageItem = {
+      name: product.name,
+      description: '',
+      price: product.price || 0,
+      cost: product.cost || 0,
+      quantity: 1,
+      image: product.image || '',
+      product_link: product.product_link || '',
+      currency: product.currency || 'TRY',
+    };
+    const updated = { ...editingPackage, items: [...editingPackage.items, item] };
+    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    setEditingPackage(updated);
+    setPkgProductSearch('');
+    setShowPkgProductSearch(false);
   };
 
   // Paket yönetimi: paketten ürün sil
   const removeItemFromPackage = (idx: number) => {
     if (!editingPackage) return;
+    const currentPkgs = useAppStore.getState().packages;
     const updated = { ...editingPackage, items: editingPackage.items.filter((_, i) => i !== idx) };
-    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    setPackages(currentPkgs.map(p => p.id === updated.id ? updated : p));
     setEditingPackage(updated);
   };
 
@@ -1247,40 +1292,110 @@ export default function YeniTeklifPage() {
               <div className="flex-1 p-5 overflow-y-auto">
                 {editingPackage ? (
                   <>
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">{editingPackage.name}</h3>
+                    {/* Paket adı düzenlenebilir */}
+                    <input
+                      type="text"
+                      value={editingPackage.name}
+                      onChange={(e) => renamePackage(e.target.value)}
+                      className="text-lg font-bold text-gray-900 mb-4 w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none pb-1"
+                    />
 
-                    {/* Pakete Yeni Ürün Ekle */}
+                    {/* Katalogdan Ürün Ara + Ekle */}
                     <div className="border border-dashed border-gray-300 rounded-xl p-4 mb-4">
-                      <h4 className="text-xs font-bold text-gray-500 mb-3 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Pakete Yeni Ürün Ekle</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-                        <input type="text" value={newPkgItem.product_link} onChange={(e) => setNewPkgItem({ ...newPkgItem, product_link: e.target.value })} placeholder="Link (Otomatik İsim)" className="p-2 border border-gray-200 rounded-lg text-sm" />
-                        <input type="text" value={newPkgItem.name} onChange={(e) => setNewPkgItem({ ...newPkgItem, name: e.target.value })} placeholder="Ürün Adı" className="p-2 border border-gray-200 rounded-lg text-sm col-span-full" />
-                        <input type="text" value={newPkgItem.image} onChange={(e) => setNewPkgItem({ ...newPkgItem, image: e.target.value })} placeholder="Görsel URL" className="p-2 border border-gray-200 rounded-lg text-sm" />
-                        <input type="text" value={newPkgItem.description} onChange={(e) => setNewPkgItem({ ...newPkgItem, description: e.target.value })} placeholder="Açıklama" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                      <h4 className="text-xs font-bold text-gray-500 mb-3 flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Pakete Ürün Ekle</h4>
+
+                      {/* Ürün Arama */}
+                      <div className="relative mb-3">
+                        <div className="flex items-center gap-2">
+                          <Search className="w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={pkgProductSearch}
+                            onChange={(e) => { setPkgProductSearch(e.target.value); setShowPkgProductSearch(e.target.value.length >= 2); }}
+                            placeholder="Katalogdan ürün ara (isim, SKU, kategori)..."
+                            className="flex-1 p-2 border border-gray-200 rounded-lg text-sm"
+                          />
+                        </div>
+                        {showPkgProductSearch && pkgProductSearch.length >= 2 && (
+                          <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {(() => {
+                              const words = pkgProductSearch.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+                              const results = brandProducts.filter(p => {
+                                const text = [p.name, p.sku || '', p.category || '', p.manufacturer || ''].join(' ').toLowerCase();
+                                return words.every(w => text.includes(w));
+                              }).slice(0, 15);
+                              return results.length > 0 ? results.map((p, i) => (
+                                <button key={i} onClick={() => addProductToPackage(p)} className="w-full text-left p-2 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm">
+                                  <div className="font-medium text-gray-900">{p.name}</div>
+                                  <div className="text-[10px] text-gray-400">{p.manufacturer} • {p.sku} • {p.currency} {p.price?.toLocaleString('tr-TR')}</div>
+                                </button>
+                              )) : <div className="p-3 text-xs text-gray-400 text-center">Ürün bulunamadı</div>;
+                            })()}
+                          </div>
+                        )}
                       </div>
-                      <div className="grid grid-cols-3 gap-2 mb-3">
-                        <input type="number" value={newPkgItem.price} onChange={(e) => setNewPkgItem({ ...newPkgItem, price: e.target.value })} placeholder="Fiyat" className="p-2 border border-gray-200 rounded-lg text-sm" />
-                        <input type="number" value={newPkgItem.cost} onChange={(e) => setNewPkgItem({ ...newPkgItem, cost: e.target.value })} placeholder="Maliyet" className="p-2 border border-gray-200 rounded-lg text-sm" />
-                        <input type="number" value={newPkgItem.quantity} onChange={(e) => setNewPkgItem({ ...newPkgItem, quantity: e.target.value })} placeholder="Adet" className="p-2 border border-gray-200 rounded-lg text-sm" min="1" />
-                      </div>
-                      <button onClick={addItemToPackage} className="w-full py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">Pakete Ekle</button>
+
+                      {/* Manuel Ürün Ekleme */}
+                      <details className="mb-3">
+                        <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">Manuel ürün ekle</summary>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 mb-3">
+                          <input type="text" value={newPkgItem.product_link} onChange={(e) => setNewPkgItem({ ...newPkgItem, product_link: e.target.value })} placeholder="Link (Otomatik İsim)" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                          <input type="text" value={newPkgItem.name} onChange={(e) => setNewPkgItem({ ...newPkgItem, name: e.target.value })} placeholder="Ürün Adı" className="p-2 border border-gray-200 rounded-lg text-sm col-span-full" />
+                          <input type="text" value={newPkgItem.image} onChange={(e) => setNewPkgItem({ ...newPkgItem, image: e.target.value })} placeholder="Görsel URL" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                          <input type="text" value={newPkgItem.description} onChange={(e) => setNewPkgItem({ ...newPkgItem, description: e.target.value })} placeholder="Açıklama" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 mb-3">
+                          <input type="number" value={newPkgItem.price} onChange={(e) => setNewPkgItem({ ...newPkgItem, price: e.target.value })} placeholder="Fiyat" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                          <input type="number" value={newPkgItem.cost} onChange={(e) => setNewPkgItem({ ...newPkgItem, cost: e.target.value })} placeholder="Maliyet" className="p-2 border border-gray-200 rounded-lg text-sm" />
+                          <input type="number" value={newPkgItem.quantity} onChange={(e) => setNewPkgItem({ ...newPkgItem, quantity: e.target.value })} placeholder="Adet" className="p-2 border border-gray-200 rounded-lg text-sm" min="1" />
+                          <select value={newPkgItemCurrency} onChange={(e) => setNewPkgItemCurrency(e.target.value as any)} className="p-2 border border-gray-200 rounded-lg text-sm">
+                            <option value="TRY">₺ TRY</option>
+                            <option value="EUR">€ EUR</option>
+                            <option value="USD">$ USD</option>
+                            <option value="GBP">£ GBP</option>
+                          </select>
+                        </div>
+                        <button onClick={addItemToPackage} className="w-full py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700">Pakete Ekle</button>
+                      </details>
                     </div>
 
-                    {/* Paket içeriği */}
+                    {/* Paket içeriği — düzenlenebilir */}
                     <div className="space-y-2">
                       {editingPackage.items.map((item, idx) => (
                         <div key={idx} className="border border-gray-200 rounded-lg p-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="font-bold text-sm text-gray-900">{item.name}</div>
-                              {item.description && <div className="text-xs text-gray-400">{item.description}</div>}
-                              <div className="flex gap-3 mt-1 text-xs text-gray-500">
-                                <span>Adet: {item.quantity}</span>
-                                <span>Fiyat: <span className="text-green-600 font-bold">{item.price.toLocaleString('tr-TR')}</span></span>
-                                <span>Mal: {item.cost.toLocaleString('tr-TR')}</span>
+                          <div className="flex items-start gap-3">
+                            {/* Görsel */}
+                            <div className="relative w-12 h-12 flex-shrink-0 border rounded bg-white overflow-hidden group">
+                              {item.image ? <img src={item.image} className="w-full h-full object-contain" /> : <div className="w-full h-full bg-gray-100" />}
+                              <button
+                                onClick={() => { const url = prompt('Yeni görsel URL:', item.image || ''); if (url !== null) updatePackageItem(idx, 'image', url); }}
+                                className="absolute inset-0 bg-black/30 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              ><ImagePlus className="w-3.5 h-3.5" /></button>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <input type="text" value={item.name} onChange={(e) => updatePackageItem(idx, 'name', e.target.value)} className="font-bold text-sm text-gray-900 w-full bg-transparent border-b border-transparent hover:border-gray-200 focus:border-blue-400 focus:outline-none" />
+                              <div className="flex gap-2 mt-1.5 items-center">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-gray-400">Adet:</span>
+                                  <input type="number" value={item.quantity} onChange={(e) => updatePackageItem(idx, 'quantity', e.target.value)} className="w-10 text-xs text-center bg-gray-50 border border-gray-200 rounded" min="1" />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-gray-400">Fiyat:</span>
+                                  <input type="number" value={item.price} onChange={(e) => updatePackageItem(idx, 'price', e.target.value)} className="w-20 text-xs text-center bg-gray-50 border border-gray-200 rounded font-bold text-green-600" />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-gray-400">Mal:</span>
+                                  <input type="number" value={item.cost} onChange={(e) => updatePackageItem(idx, 'cost', e.target.value)} className="w-20 text-xs text-center bg-gray-50 border border-gray-200 rounded" />
+                                </div>
+                                <select value={item.currency || 'TRY'} onChange={(e) => updatePackageItem(idx, 'currency', e.target.value)} className="text-[10px] bg-gray-50 border border-gray-200 rounded px-1 py-0.5">
+                                  <option value="TRY">₺</option>
+                                  <option value="EUR">€</option>
+                                  <option value="USD">$</option>
+                                  <option value="GBP">£</option>
+                                </select>
                               </div>
                             </div>
-                            <button onClick={() => removeItemFromPackage(idx)} className="p-1.5 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                            <button onClick={() => removeItemFromPackage(idx)} className="p-1.5 hover:bg-red-50 rounded flex-shrink-0"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
                           </div>
                         </div>
                       ))}
