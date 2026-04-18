@@ -317,7 +317,7 @@ export default function YeniTeklifPage() {
 
   // Paket yönetimi: yeni paket oluştur
   const createNewPackage = () => {
-    if (!newPackageName.trim()) return;
+    if (!newPackageName.trim()) return alert('Paket adı giriniz.');
     const pkg: PackageTemplate = {
       id: `pkg-${Date.now()}`,
       brand_id: brandId,

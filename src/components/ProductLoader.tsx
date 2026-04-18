@@ -39,8 +39,9 @@ export default function ProductLoader() {
         }
       }
       if (jsonProducts.length > 0) {
+        const currentProducts = useAppStore.getState().products;
         // Manuel eklenen ürünleri koru (id'si auto- veya custom- ile başlayanlar)
-        const manualProducts = products.filter(
+        const manualProducts = currentProducts.filter(
           (p) => p.id.startsWith('auto-') || p.id.startsWith('custom-') || !jsonProducts.some((jp) => jp.id === p.id)
         );
         // JSON ürünlerini + manuel ürünleri birleştir
@@ -78,10 +79,11 @@ export default function ProductLoader() {
         }
       }
       if (jsonPackages.length > 0) {
-        const existingIds = new Set(packages.map((p) => p.id));
+        const currentPackages = useAppStore.getState().packages;
+        const existingIds = new Set(currentPackages.map((p) => p.id));
         const newPkgs = jsonPackages.filter((p) => !existingIds.has(p.id));
         if (newPkgs.length > 0) {
-          setPackages([...packages, ...newPkgs]);
+          setPackages([...currentPackages, ...newPkgs]);
         }
       }
     };
