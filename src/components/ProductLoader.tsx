@@ -80,11 +80,10 @@ export default function ProductLoader() {
       }
       if (jsonPackages.length > 0) {
         const currentPackages = useAppStore.getState().packages;
-        const existingIds = new Set(currentPackages.map((p) => p.id));
-        const newPkgs = jsonPackages.filter((p) => !existingIds.has(p.id));
-        if (newPkgs.length > 0) {
-          setPackages([...currentPackages, ...newPkgs]);
-        }
+        // JSON dosyası source of truth — JSON'daki paketleri güncelle, localStorage'daki ekstraları koru
+        const jsonIds = new Set(jsonPackages.map((p) => p.id));
+        const localOnlyPkgs = currentPackages.filter((p) => !jsonIds.has(p.id));
+        setPackages([...jsonPackages, ...localOnlyPkgs]);
       }
     };
 

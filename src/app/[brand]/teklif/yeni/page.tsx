@@ -340,6 +340,26 @@ export default function YeniTeklifPage() {
     setShowPackageDropdown(false);
   };
 
+  // Paketleri JSON dosyasına kaydet (cihazlar arası senkronizasyon) — debounced
+  const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const syncPackagesToFile = useCallback((updatedPackages: PackageTemplate[]) => {
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      const byBrand: Record<string, PackageTemplate[]> = {};
+      updatedPackages.forEach(p => {
+        if (!byBrand[p.brand_id]) byBrand[p.brand_id] = [];
+        byBrand[p.brand_id].push(p);
+      });
+      Object.entries(byBrand).forEach(([bid, pkgs]) => {
+        fetch('/api/packages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brand_id: bid, packages: pkgs }),
+        }).catch(err => console.warn('Paket senkronizasyon hatası:', err));
+      });
+    }, 800);
+  }, []);
+
   // Paket yönetimi: yeni paket oluştur
   const createNewPackage = () => {
     if (!newPackageName.trim()) return alert('Paket adı giriniz.');
@@ -352,6 +372,7 @@ export default function YeniTeklifPage() {
     addPackage(pkg);
     setEditingPackage(pkg);
     setNewPackageName('');
+    syncPackagesToFile([...useAppStore.getState().packages, pkg]);
   };
 
   // Paket yönetimi: pakete ürün ekle
@@ -368,12 +389,14 @@ export default function YeniTeklifPage() {
       currency: newPkgItemCurrency,
     };
     const updated = { ...editingPackage, items: [...editingPackage.items, item] };
-    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    const newPkgs = packages.map(p => p.id === updated.id ? updated : p);
+    setPackages(newPkgs);
     setEditingPackage(updated);
     setNewPkgItem({ name: '', description: '', price: '', cost: '', quantity: '1', image: '', product_link: '' });
     setNewPkgItemCurrency('TRY');
     setPkgProductSearch('');
     setShowPkgProductSearch(false);
+    syncPackagesToFile(newPkgs);
   };
 
   const updatePackageItem = (idx: number, field: string, value: any) => {
@@ -383,15 +406,19 @@ export default function YeniTeklifPage() {
       return { ...item, [field]: field === 'price' || field === 'cost' ? (parseFloat(value) || 0) : field === 'quantity' ? (parseInt(value) || 1) : value };
     });
     const updated = { ...editingPackage, items: updatedItems };
-    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    const newPkgs = packages.map(p => p.id === updated.id ? updated : p);
+    setPackages(newPkgs);
     setEditingPackage(updated);
+    syncPackagesToFile(newPkgs);
   };
 
   const renamePackage = (newName: string) => {
     if (!editingPackage) return;
     const updated = { ...editingPackage, name: newName };
-    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    const newPkgs = packages.map(p => p.id === updated.id ? updated : p);
+    setPackages(newPkgs);
     setEditingPackage(updated);
+    syncPackagesToFile(newPkgs);
   };
 
   const duplicatePackage = (pkg: PackageTemplate) => {
@@ -402,7 +429,9 @@ export default function YeniTeklifPage() {
       items: pkg.items.map(i => ({ ...i })),
     };
     const currentPkgs = useAppStore.getState().packages;
-    setPackages([...currentPkgs, dup]);
+    const newPkgs = [...currentPkgs, dup];
+    setPackages(newPkgs);
+    syncPackagesToFile(newPkgs);
   };
 
   const addProductToPackage = (product: any) => {
@@ -418,10 +447,12 @@ export default function YeniTeklifPage() {
       currency: product.currency || 'TRY',
     };
     const updated = { ...editingPackage, items: [...editingPackage.items, item] };
-    setPackages(packages.map(p => p.id === updated.id ? updated : p));
+    const newPkgs = packages.map(p => p.id === updated.id ? updated : p);
+    setPackages(newPkgs);
     setEditingPackage(updated);
     setPkgProductSearch('');
     setShowPkgProductSearch(false);
+    syncPackagesToFile(newPkgs);
   };
 
   // Paket yönetimi: paketten ürün sil
@@ -429,8 +460,10 @@ export default function YeniTeklifPage() {
     if (!editingPackage) return;
     const currentPkgs = useAppStore.getState().packages;
     const updated = { ...editingPackage, items: editingPackage.items.filter((_, i) => i !== idx) };
-    setPackages(currentPkgs.map(p => p.id === updated.id ? updated : p));
+    const newPkgs = currentPkgs.map(p => p.id === updated.id ? updated : p);
+    setPackages(newPkgs);
     setEditingPackage(updated);
+    syncPackagesToFile(newPkgs);
   };
 
   // Paket yönetimi: paketi teklife yükle
@@ -1362,7 +1395,7 @@ export default function YeniTeklifPage() {
                       <button onClick={() => loadPackageToProposal(pkg)} className="text-[10px] text-blue-600 font-bold hover:underline">Listeye Yükle</button>
                       <button onClick={() => setEditingPackage(pkg)} className="p-1 rounded hover:bg-gray-100"><Edit2 className="w-3 h-3 text-gray-400" /></button>
                       <button onClick={() => duplicatePackage(pkg)} className="p-1 rounded hover:bg-blue-50" title="Çoğalt"><Copy className="w-3 h-3 text-blue-400" /></button>
-                      <button onClick={() => { if (confirm('Bu paketi silmek istediğinize emin misiniz?')) { removePackage(pkg.id); if (editingPackage?.id === pkg.id) setEditingPackage(null); } }} className="p-1 rounded hover:bg-red-50"><Trash2 className="w-3 h-3 text-red-400" /></button>
+                      <button onClick={() => { if (confirm('Bu paketi silmek istediğinize emin misiniz?')) { removePackage(pkg.id); if (editingPackage?.id === pkg.id) setEditingPackage(null); const remaining = useAppStore.getState().packages.filter(p => p.id !== pkg.id); syncPackagesToFile(remaining); } }} className="p-1 rounded hover:bg-red-50"><Trash2 className="w-3 h-3 text-red-400" /></button>
                     </div>
                   </div>
                 ))}
