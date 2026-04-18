@@ -8,7 +8,8 @@ import { formatCurrency, getCurrencySymbol, numberToText, generateProposalNo, ge
 import type { ProposalItem, Proposal, PackageTemplate, PackageItem } from '@/lib/types';
 import {
   Plus, Trash2, Copy, GripVertical, Eye, EyeOff, Truck, Save, FileDown,
-  Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw, Package, UserCheck, AlertCircle, Boxes, X, Edit2
+  Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw, Package, UserCheck, AlertCircle, Boxes, X, Edit2,
+  List, LayoutGrid
 } from 'lucide-react';
 
 export default function YeniTeklifPage() {
@@ -60,6 +61,7 @@ export default function YeniTeklifPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPrintMode, setIsPrintMode] = useState(false);
   const [isCompactMode, setIsCompactMode] = useState(false);
+  const [viewMode, setViewMode] = useState<'liste' | 'katalog'>('liste');
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
@@ -508,6 +510,13 @@ export default function YeniTeklifPage() {
       <div className="max-w-4xl mx-auto">
         <div className="no-print flex items-center gap-3 mb-4 p-3 bg-white rounded-xl border shadow-sm">
           <button onClick={() => setIsPrintMode(false)} className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"><ArrowLeft className="w-4 h-4" /> Düzenlemeye Dön</button>
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Önizleme Modu</span>
+          <button
+            onClick={() => setViewMode(viewMode === 'liste' ? 'katalog' : 'liste')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${viewMode === 'katalog' ? 'bg-green-600 text-white' : 'bg-gray-700 text-white'}`}
+          >
+            {viewMode === 'liste' ? <><List className="w-3.5 h-3.5" /> Görünüm: Liste</> : <><LayoutGrid className="w-3.5 h-3.5" /> Görünüm: Katalog</>}
+          </button>
           <div className="flex-1" />
           <button onClick={handlePrint} className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><Printer className="w-4 h-4" /> Yazdır</button>
           <button onClick={handleDownloadPDF} disabled={!isFormValid} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 ${isFormValid ? 'bg-red-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}><FileDown className="w-4 h-4" /> PDF İndir</button>
@@ -554,8 +563,8 @@ export default function YeniTeklifPage() {
             </div>
           </div>
 
-          {/* Items Table — Birim fiyatlar KDV hariç gösterilir */}
-          {items.length > 0 && (
+          {/* Items — Liste veya Katalog Görünüm */}
+          {items.length > 0 && viewMode === 'liste' && (
             <table className="w-full text-sm mb-8" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
@@ -597,6 +606,34 @@ export default function YeniTeklifPage() {
                 })}
               </tbody>
             </table>
+          )}
+
+          {/* Katalog Görünüm */}
+          {items.length > 0 && viewMode === 'katalog' && (
+            <div className="space-y-4 mb-8">
+              {items.map((item, idx) => {
+                const netUnitPrice = item.price * (1 - item.item_discount / 100);
+                const netLineTotal = item.total;
+                const isHidden = globalHidePrices || item.hide_price;
+                return (
+                  <div key={item.id} className={`flex gap-5 p-4 rounded-xl border ${item.shipped ? 'opacity-50 line-through' : ''}`} style={{ borderColor: brand.tableBorderHex, pageBreakInside: 'avoid' }}>
+                    <div className="w-36 h-36 flex-shrink-0 border rounded-lg bg-white overflow-hidden">
+                      {item.image ? <img src={item.image} className="w-full h-full object-contain" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : <div className="w-full h-full bg-gray-100" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-gray-900 text-base">{item.name}</div>
+                      {item.sku && <div className="text-xs text-gray-400 mt-0.5">Ürün Kodu: {item.sku}</div>}
+                      {item.description && <div className="text-sm text-gray-500 italic mt-1">{item.description}</div>}
+                      {item.product_link && <a href={item.product_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-1 inline-block">Ürün Detayı</a>}
+                      <div className="mt-3 flex items-baseline gap-2">
+                        <span className="text-sm text-gray-500">{item.quantity} Adet x {!isHidden ? formatCurrency(convertCurrency(netUnitPrice), sym) : '-'}</span>
+                        {!isHidden && <span className="text-lg font-extrabold text-gray-900 ml-auto">{formatCurrency(convertCurrency(netLineTotal), sym)}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {/* Totals — KDV hariç ara toplam + KDV satırı + Kargo + Genel Toplam */}
