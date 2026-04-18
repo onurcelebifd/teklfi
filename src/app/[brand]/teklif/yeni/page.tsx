@@ -694,10 +694,10 @@ export default function YeniTeklifPage() {
 
           {/* Brand Logos */}
           {brand.brandLogos.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-gray-200">
-              <div className="flex flex-wrap gap-4 items-center justify-center opacity-70">
+            <div className="mt-6 pt-4 border-t border-gray-200" style={{ pageBreakInside: 'avoid' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '20px 16px', alignItems: 'center', justifyItems: 'center' }}>
                 {brand.brandLogos.map((logo, i) => (
-                  <img key={i} src={logo} className="h-7 w-auto object-contain" alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <img key={i} src={logo} style={{ height: '32px', width: 'auto', objectFit: 'contain', opacity: 0.7 }} alt="" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 ))}
               </div>
             </div>
