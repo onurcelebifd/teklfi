@@ -529,7 +529,7 @@ export default function YeniTeklifPage() {
           <div className="mb-6 pb-4 border-b-2" style={{ borderColor: brand.accentColor }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ maxWidth: '55%' }}>
-                <img src={brand.logo} alt={brand.name} style={{ height: '88px', maxWidth: '340px', objectFit: 'contain', display: 'block' }} crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <img src={brand.logo} alt={brand.name} style={{ maxHeight: '88px', maxWidth: '340px', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }} crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <div style={{ textAlign: 'right', paddingTop: 0, marginTop: 0 }}>
                 <h1 className={`text-lg font-extrabold ${brand.textColor}`} style={{ margin: 0, padding: 0, lineHeight: 1 }}>FİYAT TEKLİFİ</h1>
@@ -624,7 +624,6 @@ export default function YeniTeklifPage() {
                       <div className="font-bold text-gray-900 text-base">{item.name}</div>
                       {item.sku && <div className="text-xs text-gray-400 mt-0.5">Ürün Kodu: {item.sku}</div>}
                       {item.description && <div className="text-sm text-gray-500 italic mt-1">{item.description}</div>}
-                      {item.product_link && <a href={item.product_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-1 inline-block">Ürün Detayı</a>}
                       <div className="mt-3 flex items-baseline gap-2">
                         <span className="text-sm text-gray-500">{item.quantity} Adet x {!isHidden ? formatCurrency(convertCurrency(netUnitPrice), sym) : '-'}</span>
                         {!isHidden && <span className="text-lg font-extrabold text-gray-900 ml-auto">{formatCurrency(convertCurrency(netLineTotal), sym)}</span>}
