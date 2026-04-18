@@ -370,7 +370,14 @@ export default function TekliflerPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-base font-bold text-gray-900 truncate">{p.project_name || 'İsimsiz Proje'}</span>
+                    <input
+                      type="text"
+                      value={p.project_name || ''}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => updateProposal(p.id, { project_name: e.target.value })}
+                      className="text-base font-bold text-gray-900 bg-transparent outline-none border-b border-transparent hover:border-gray-300 focus:border-blue-500 truncate min-w-0 flex-1"
+                      placeholder="İsimsiz Proje"
+                    />
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[p.status]}`}>
                       {STATUS_LABELS[p.status]}
                     </span>
