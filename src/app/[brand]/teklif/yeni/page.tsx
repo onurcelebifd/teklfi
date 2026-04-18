@@ -697,7 +697,7 @@ export default function YeniTeklifPage() {
             <div className="mt-6 pt-4 border-t border-gray-200" style={{ pageBreakInside: 'avoid' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '20px 16px', alignItems: 'center', justifyItems: 'center' }}>
                 {brand.brandLogos.map((logo, i) => (
-                  <img key={i} src={logo} style={{ height: '32px', width: 'auto', objectFit: 'contain', opacity: 0.7 }} alt="" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <img key={i} src={logo} style={{ height: '42px', width: 'auto', objectFit: 'contain', opacity: 0.7 }} alt="" crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 ))}
               </div>
             </div>
