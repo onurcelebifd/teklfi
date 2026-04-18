@@ -44,7 +44,7 @@ export const BRANDS: Record<string, BrandConfig> = {
     borderColor: 'border-blue-200',
     headerBg: 'bg-[#040023]',
     headerText: 'text-white',
-    buttonColor: 'bg-[#040023]',
+    buttonColor: 'bg-orange-500',
     sidebarBg: 'bg-[#040023]',
     accentColor: '#040023',
     address: [
