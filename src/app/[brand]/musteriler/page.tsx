@@ -18,7 +18,6 @@ export default function MusterilerPage() {
   const [form, setForm] = useState({ name: '', phone: '', city: '', address: '' });
 
   const brandCustomers = customers
-    .filter((c) => c.brand_id === brandId)
     .filter((c) => {
       if (!search) return true;
       const s = search.toLowerCase();
