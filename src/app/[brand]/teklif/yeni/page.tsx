@@ -9,7 +9,7 @@ import type { ProposalItem, Proposal, PackageTemplate, PackageItem } from '@/lib
 import {
   Plus, Trash2, Copy, GripVertical, Eye, EyeOff, Truck, Save, FileDown,
   Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw, Package, UserCheck, AlertCircle, Boxes, X, Edit2,
-  List, LayoutGrid
+  List, LayoutGrid, ImagePlus
 } from 'lucide-react';
 
 export default function YeniTeklifPage() {
@@ -1055,8 +1055,18 @@ export default function YeniTeklifPage() {
                     <td className="py-3 px-2 text-center text-gray-400 font-medium">{idx + 1}</td>
                     {!isCompactMode && (
                       <td className="py-3 px-2">
-                        <div className="w-16 h-16 border rounded bg-white overflow-hidden">
+                        <div className="relative w-16 h-16 border rounded bg-white overflow-hidden group">
                           {item.image ? <img src={item.image} className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/64?text=Yok'; }} /> : <div className="w-full h-full bg-gray-100" />}
+                          <button
+                            onClick={() => {
+                              const url = prompt('Yeni görsel URL\'si girin:', item.image || '');
+                              if (url !== null) updateItem(item.id, 'image', url);
+                            }}
+                            className="absolute top-0 right-0 bg-blue-600 text-white p-0.5 rounded-bl opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Görseli değiştir"
+                          >
+                            <ImagePlus className="w-3 h-3" />
+                          </button>
                         </div>
                       </td>
                     )}
