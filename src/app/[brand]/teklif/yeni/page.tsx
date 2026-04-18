@@ -9,7 +9,7 @@ import type { ProposalItem, Proposal, PackageTemplate, PackageItem } from '@/lib
 import {
   Plus, Trash2, Copy, GripVertical, Eye, EyeOff, Truck, Save, FileDown,
   Printer, ArrowLeft, Search, Users, ChevronDown, RefreshCw, Package, UserCheck, AlertCircle, Boxes, X, Edit2,
-  List, LayoutGrid, ImagePlus
+  List, LayoutGrid, ImagePlus, Type
 } from 'lucide-react';
 
 export default function YeniTeklifPage() {
@@ -174,6 +174,28 @@ export default function YeniTeklifPage() {
   };
 
   const removeItem = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
+
+  const addSectionDivider = () => {
+    const section: ProposalItem = {
+      id: 'section-' + Date.now().toString() + Math.random().toString(36).substr(2, 5),
+      name: 'ARA BÖLME',
+      description: '',
+      sku: '',
+      price: 0,
+      cost: 0,
+      quantity: 0,
+      image: '',
+      product_link: '',
+      item_discount: 0,
+      total: 0,
+      input_currency: 'TRY',
+      exchange_rate: 1,
+      hide_price: false,
+      shipped: false,
+      type: 'section',
+    };
+    setItems((prev) => [...prev, section]);
+  };
   const duplicateItem = (index: number) => {
     const item = items[index];
     const dup = { ...item, id: Date.now().toString() + Math.random().toString(36).substr(2, 5) };
@@ -372,6 +394,17 @@ export default function YeniTeklifPage() {
     setEditingPackage(updated);
   };
 
+  const duplicatePackage = (pkg: PackageTemplate) => {
+    const dup: PackageTemplate = {
+      ...pkg,
+      id: `pkg-${Date.now()}`,
+      name: pkg.name + ' (Kopya)',
+      items: pkg.items.map(i => ({ ...i })),
+    };
+    const currentPkgs = useAppStore.getState().packages;
+    setPackages([...currentPkgs, dup]);
+  };
+
   const addProductToPackage = (product: any) => {
     if (!editingPackage) return;
     const item: PackageItem = {
@@ -409,11 +442,12 @@ export default function YeniTeklifPage() {
 
   // Calculations — Girilen fiyatlar KDV hariç (net)
   const KDV_RATE = 0.20;
-  const subTotal = items.reduce((sum, i) => sum + i.total, 0); // KDV hariç ara toplam
+  const productItems = items.filter(i => i.type !== 'section');
+  const subTotal = productItems.reduce((sum, i) => sum + i.total, 0); // KDV hariç ara toplam
   const discountedSubTotal = subTotal - discountValue;
   const kdvTotal = discountedSubTotal * KDV_RATE;
   const finalTotal = discountedSubTotal + kdvTotal + shippingCost; // Genel Toplam (KDV dahil + kargo)
-  const totalCost = items.reduce((sum, i) => sum + i.cost * i.quantity, 0);
+  const totalCost = productItems.reduce((sum, i) => sum + i.cost * i.quantity, 0);
   const netProfit = discountedSubTotal - totalCost;
   const profitMargin = discountedSubTotal > 0 ? (netProfit / discountedSubTotal) * 100 : 0;
   const sym = getCurrencySymbol(currency);
@@ -622,13 +656,22 @@ export default function YeniTeklifPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => {
+                {(() => { let pIdx = 0; return items.map((item, idx) => {
+                  if (item.type === 'section') {
+                    const colCount = (!isCompactMode ? 1 : 0) + (!globalHidePrices ? 2 : 0) + 3;
+                    return (
+                      <tr key={item.id} style={{ borderBottom: `2px solid ${brand.tableBorderHex}`, backgroundColor: brand.tableHeaderBgHex + '22', pageBreakInside: 'avoid' }}>
+                        <td colSpan={colCount} className="py-3 px-4 text-center font-bold text-sm uppercase tracking-wide text-gray-700">{item.name}</td>
+                      </tr>
+                    );
+                  }
+                  pIdx++;
                   const netUnitPrice = item.price * (1 - item.item_discount / 100);
                   const netLineTotal = item.total;
                   const isHidden = globalHidePrices || item.hide_price;
                   return (
                     <tr key={item.id} className={item.shipped ? 'line-through opacity-50' : ''} style={{ borderBottom: `1px solid ${brand.tableBorderHex}`, backgroundColor: idx % 2 === 1 ? brand.tableStripeBgHex : '#ffffff', pageBreakInside: 'avoid' }}>
-                      <td className="py-5 px-3 text-center text-gray-500 font-medium text-sm">{idx + 1}</td>
+                      <td className="py-5 px-3 text-center text-gray-500 font-medium text-sm">{pIdx}</td>
                       {!isCompactMode && (
                         <td className="py-4 px-3">
                           <div className="w-20 h-20 border rounded bg-white overflow-hidden">
@@ -648,7 +691,7 @@ export default function YeniTeklifPage() {
                       {isHidden && !globalHidePrices && <td className="py-3 px-2 text-center text-gray-400">-</td>}
                     </tr>
                   );
-                })}
+                }); })()}
               </tbody>
             </table>
           )}
@@ -657,6 +700,11 @@ export default function YeniTeklifPage() {
           {items.length > 0 && viewMode === 'katalog' && (
             <div className="space-y-4 mb-8">
               {items.map((item, idx) => {
+                if (item.type === 'section') {
+                  return (
+                    <div key={item.id} className="py-3 px-4 text-center font-bold text-sm uppercase tracking-wide text-gray-700 border-b-2" style={{ borderColor: brand.tableBorderHex, backgroundColor: brand.tableHeaderBgHex + '22', pageBreakInside: 'avoid' }}>{item.name}</div>
+                  );
+                }
                 const netUnitPrice = item.price * (1 - item.item_discount / 100);
                 const netLineTotal = item.total;
                 const isHidden = globalHidePrices || item.hide_price;
@@ -986,9 +1034,12 @@ export default function YeniTeklifPage() {
             <label className="block text-xs font-bold text-gray-500 mb-1">Adet</label>
             <input type="number" value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="1" min="1" />
           </div>
-          <div>
+          <div className="flex flex-col gap-1.5">
             <button onClick={() => addItem()} className={`w-full py-2 rounded-lg text-white text-sm font-bold flex items-center justify-center gap-2 ${brand.buttonColor} hover:opacity-90`}>
               <Plus className="w-4 h-4" /> Ekle
+            </button>
+            <button onClick={addSectionDivider} className="w-full py-1.5 rounded-lg text-gray-600 text-xs font-bold flex items-center justify-center gap-1.5 border border-gray-300 bg-gray-50 hover:bg-gray-100">
+              <Type className="w-3.5 h-3.5" /> Ara Başlık
             </button>
           </div>
         </div>
@@ -1079,7 +1130,35 @@ export default function YeniTeklifPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item, idx) => {
+              {(() => { let productIndex = 0; return items.map((item, idx) => {
+                if (item.type === 'section') {
+                  return (
+                    <tr
+                      key={item.id}
+                      className="border-b-2 border-gray-300 bg-gray-100"
+                      draggable
+                      onDragStart={() => handleDragStart(idx)}
+                      onDragEnter={() => handleDragEnter(idx)}
+                      onDragEnd={handleDrop}
+                      onDragOver={(e) => e.preventDefault()}
+                    >
+                      <td className="py-2 px-2 cursor-grab text-gray-300 hover:text-gray-600"><GripVertical className="w-4 h-4" /></td>
+                      <td colSpan={isCompactMode ? 6 : 7} className="py-2 px-3">
+                        <div className="flex items-center justify-between">
+                          <input
+                            type="text"
+                            value={item.name}
+                            onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                            className="text-sm font-bold text-gray-700 uppercase tracking-wide bg-transparent border-none outline-none flex-1 text-center"
+                            placeholder="Bölüm başlığı yazın..."
+                          />
+                          <button onClick={() => removeItem(item.id)} className="p-1 rounded hover:bg-red-100 ml-2"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+                productIndex++;
                 const netUnitPrice = item.price * (1 - item.item_discount / 100);
                 const netLineTotal = item.total;
                 const displayUnitPrice = convertCurrency(netUnitPrice);
@@ -1097,7 +1176,7 @@ export default function YeniTeklifPage() {
                     onDragOver={(e) => e.preventDefault()}
                   >
                     <td className="py-3 px-2 cursor-grab text-gray-300 hover:text-gray-600"><GripVertical className="w-4 h-4" /></td>
-                    <td className="py-3 px-2 text-center text-gray-400 font-medium">{idx + 1}</td>
+                    <td className="py-3 px-2 text-center text-gray-400 font-medium">{productIndex}</td>
                     {!isCompactMode && (
                       <td className="py-3 px-2">
                         <div className="relative w-16 h-16 border rounded bg-white overflow-hidden group">
@@ -1179,7 +1258,7 @@ export default function YeniTeklifPage() {
                     </td>
                   </tr>
                 );
-              })}
+              }); })()}
             </tbody>
           </table>
         </div>
@@ -1282,6 +1361,7 @@ export default function YeniTeklifPage() {
                     <div className="flex items-center gap-1 mt-2">
                       <button onClick={() => loadPackageToProposal(pkg)} className="text-[10px] text-blue-600 font-bold hover:underline">Listeye Yükle</button>
                       <button onClick={() => setEditingPackage(pkg)} className="p-1 rounded hover:bg-gray-100"><Edit2 className="w-3 h-3 text-gray-400" /></button>
+                      <button onClick={() => duplicatePackage(pkg)} className="p-1 rounded hover:bg-blue-50" title="Çoğalt"><Copy className="w-3 h-3 text-blue-400" /></button>
                       <button onClick={() => { if (confirm('Bu paketi silmek istediğinize emin misiniz?')) { removePackage(pkg.id); if (editingPackage?.id === pkg.id) setEditingPackage(null); } }} className="p-1 rounded hover:bg-red-50"><Trash2 className="w-3 h-3 text-red-400" /></button>
                     </div>
                   </div>
