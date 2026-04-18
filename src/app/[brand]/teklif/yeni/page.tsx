@@ -840,7 +840,16 @@ export default function YeniTeklifPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Yeni Teklif Oluştur</h1>
-          <p className="text-sm text-gray-500 mt-1">{brand.fullName} • {proposalNo}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-sm text-gray-500">{brand.fullName} •</span>
+            <input
+              type="text"
+              value={proposalNo}
+              onChange={(e) => setProposalNo(e.target.value)}
+              className="text-sm text-gray-500 bg-transparent outline-none border-b border-transparent hover:border-gray-300 focus:border-blue-500 font-medium"
+              style={{ width: `${Math.max(proposalNo.length * 8, 80)}px` }}
+            />
+          </div>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setIsPrintMode(true)} className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-900"><Eye className="w-4 h-4" /> Önizle</button>
