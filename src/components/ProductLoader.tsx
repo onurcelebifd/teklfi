@@ -65,14 +65,21 @@ export default function ProductLoader() {
     // Load packages for all brands
     const loadPackages = async () => {
       const jsonPackages: any[] = [];
+      const seenIds = new Set<string>();
       for (const [brandId, file] of Object.entries(PACKAGE_FILES)) {
         try {
           const res = await fetch(file);
           if (!res.ok) continue;
           const data = await res.json();
           if (Array.isArray(data)) {
-            jsonPackages.push(...data);
-            console.log(`✅ ${data.length} ${brandId} paketi yüklendi.`);
+            // Deduplikasyon: mutpro ve guclumutfak aynı paketleri paylaşıyor
+            const unique = data.filter((p: any) => {
+              if (seenIds.has(p.id)) return false;
+              seenIds.add(p.id);
+              return true;
+            });
+            jsonPackages.push(...unique);
+            console.log(`✅ ${unique.length} ${brandId} paketi yüklendi.`);
           }
         } catch (err) {
           console.warn(`${brandId} paketleri yüklenemedi:`, err);

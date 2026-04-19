@@ -71,7 +71,7 @@ export default function YeniTeklifPage() {
 
   // New product form (kataloga kaydetme)
   const [showNewProductForm, setShowNewProductForm] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', category: '', price: '', cost: '', image: '', product_link: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', category: '', price: '', cost: '', image: '', product_link: '', sku: '' });
   const [newProductCurrency, setNewProductCurrency] = useState<'EUR' | 'TRY' | 'USD' | 'GBP'>('EUR');
 
   // Livesearch state for product name input
@@ -88,7 +88,10 @@ export default function YeniTeklifPage() {
   const [newPkgItemCurrency, setNewPkgItemCurrency] = useState<'TRY' | 'EUR' | 'USD' | 'GBP'>('TRY');
   const [pkgProductSearch, setPkgProductSearch] = useState('');
   const [showPkgProductSearch, setShowPkgProductSearch] = useState(false);
-  const brandPackages = packages.filter(p => p.brand_id === brandId);
+  const SHARED_PACKAGE_BRANDS = ['mutpro', 'guclumutfak'];
+  const brandPackages = SHARED_PACKAGE_BRANDS.includes(brandId)
+    ? packages.filter(p => SHARED_PACKAGE_BRANDS.includes(p.brand_id))
+    : packages.filter(p => p.brand_id === brandId);
 
   // Load existing proposal for editing
   useEffect(() => {
@@ -292,13 +295,14 @@ export default function YeniTeklifPage() {
       product_link: newProduct.product_link.trim(),
       category: newProduct.category.trim(),
       currency: newProductCurrency,
+      sku: newProduct.sku.trim(),
     };
     addProduct(product);
     // Teklife eklerken TRY'ye dönüştür
     const priceInTry = convertToTry(price, newProductCurrency);
     const costInTry = convertToTry(cost, newProductCurrency);
-    addItem({ name: product.name, description: '', price: priceInTry, cost: costInTry, image: product.image, product_link: product.product_link, quantity: 1 });
-    setNewProduct({ name: '', category: '', price: '', cost: '', image: '', product_link: '' });
+    addItem({ name: product.name, description: '', sku: product.sku, price: priceInTry, cost: costInTry, image: product.image, product_link: product.product_link, quantity: 1 });
+    setNewProduct({ name: '', category: '', price: '', cost: '', image: '', product_link: '', sku: '' });
     setShowNewProductForm(false);
   };
 
@@ -318,9 +322,10 @@ export default function YeniTeklifPage() {
       product_link: newProduct.product_link.trim(),
       category: newProduct.category.trim(),
       currency: newProductCurrency,
+      sku: newProduct.sku.trim(),
     };
     addProduct(product);
-    setNewProduct({ name: '', category: '', price: '', cost: '', image: '', product_link: '' });
+    setNewProduct({ name: '', category: '', price: '', cost: '', image: '', product_link: '', sku: '' });
     alert('Ürün kataloga kaydedildi!');
   };
 
@@ -345,8 +350,24 @@ export default function YeniTeklifPage() {
   const syncPackagesToFile = useCallback((updatedPackages: PackageTemplate[]) => {
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(() => {
+      const SHARED_BRANDS = ['mutpro', 'guclumutfak'];
+      const sharedPkgs = updatedPackages.filter(p => SHARED_BRANDS.includes(p.brand_id));
+      const otherPkgs = updatedPackages.filter(p => !SHARED_BRANDS.includes(p.brand_id));
+
+      // Paylaşılan markalar için aynı paketleri her iki dosyaya da yaz
+      if (sharedPkgs.length > 0) {
+        SHARED_BRANDS.forEach(bid => {
+          fetch('/api/packages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ brand_id: bid, packages: sharedPkgs }),
+          }).catch(err => console.warn('Paket senkronizasyon hatası:', err));
+        });
+      }
+
+      // Diğer markalar normal şekilde
       const byBrand: Record<string, PackageTemplate[]> = {};
-      updatedPackages.forEach(p => {
+      otherPkgs.forEach(p => {
         if (!byBrand[p.brand_id]) byBrand[p.brand_id] = [];
         byBrand[p.brand_id].push(p);
       });
@@ -1106,6 +1127,10 @@ export default function YeniTeklifPage() {
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-gray-500 mb-1">Ürün Adı *</label>
                 <input type="text" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="Ürün adı" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Ürün Kodu</label>
+                <input type="text" value={newProduct.sku} onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg text-sm" placeholder="SKU / Ürün Kodu" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-1">Kategori</label>
