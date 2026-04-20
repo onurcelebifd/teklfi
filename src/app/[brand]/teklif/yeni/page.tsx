@@ -1239,7 +1239,10 @@ export default function YeniTeklifPage() {
                     </td>
                     <td className="py-3 px-2 max-w-xs">
                       <input type="text" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full font-bold text-sm text-gray-900 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none" />
-                      {item.sku && <div className="text-[10px] text-gray-400">Ürün kodu: {item.sku}</div>}
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-gray-400">Ürün kodu:</span>
+                        <input type="text" value={item.sku || ''} onChange={(e) => updateItem(item.id, 'sku', e.target.value)} className="text-[10px] text-gray-500 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none w-32" placeholder="SKU girin" />
+                      </div>
                       <div className="mt-1">
                         <div className="flex items-center gap-1 mb-1">
                           <button onClick={() => updateItem(item.id, 'description_format', item.description_format === 'numbered' ? 'none' : 'numbered')} className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition ${item.description_format === 'numbered' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'}`} title="Numaralı liste">1.</button>
