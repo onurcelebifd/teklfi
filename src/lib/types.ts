@@ -42,6 +42,7 @@ export interface ProposalItem {
   hide_price: boolean;
   shipped: boolean;
   type?: 'section' | 'product';
+  description_format?: 'none' | 'numbered' | 'bullet';
 }
 
 export interface Proposal {

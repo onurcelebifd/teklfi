@@ -736,7 +736,13 @@ export default function YeniTeklifPage() {
                       <td className="py-5 px-3">
                         <div className="font-semibold text-gray-900 text-sm">{item.name}</div>
                         {item.sku && <div className="text-[10px] text-gray-400 mt-0.5">Ürün Kodu: {item.sku}</div>}
-                        {item.description && <div className="text-xs text-gray-500 italic mt-0.5">{item.description}</div>}
+                        {item.description && (() => {
+                          const lines = item.description.split('\n').filter(l => l.trim());
+                          if (lines.length === 0) return null;
+                          if (item.description_format === 'numbered') return <ol style={{ margin: '2px 0 0 0', paddingLeft: '18px', listStyleType: 'decimal' }} className="text-xs text-gray-500 italic">{lines.map((l, i) => <li key={i}>{l.trim()}</li>)}</ol>;
+                          if (item.description_format === 'bullet') return <ul style={{ margin: '2px 0 0 0', paddingLeft: '18px', listStyleType: 'disc' }} className="text-xs text-gray-500 italic">{lines.map((l, i) => <li key={i}>{l.trim()}</li>)}</ul>;
+                          return <div className="text-xs text-gray-500 italic mt-0.5" style={{ whiteSpace: 'pre-line' }}>{item.description}</div>;
+                        })()}
                       </td>
                       <td className="py-5 px-3 text-center font-semibold text-sm">{item.quantity}</td>
                       {!isHidden && <td className="py-5 px-3 text-right font-bold text-sm">{formatCurrency(convertCurrency(netUnitPrice), sym)}</td>}
@@ -770,7 +776,13 @@ export default function YeniTeklifPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-gray-900 text-base">{item.name}</div>
                       {item.sku && <div className="text-xs text-gray-400 mt-0.5">Ürün Kodu: {item.sku}</div>}
-                      {item.description && <div className="text-sm text-gray-500 italic mt-1">{item.description}</div>}
+                      {item.description && (() => {
+                        const lines = item.description.split('\n').filter(l => l.trim());
+                        if (lines.length === 0) return null;
+                        if (item.description_format === 'numbered') return <ol style={{ margin: '4px 0 0 0', paddingLeft: '18px', listStyleType: 'decimal' }} className="text-sm text-gray-500 italic">{lines.map((l, i) => <li key={i}>{l.trim()}</li>)}</ol>;
+                        if (item.description_format === 'bullet') return <ul style={{ margin: '4px 0 0 0', paddingLeft: '18px', listStyleType: 'disc' }} className="text-sm text-gray-500 italic">{lines.map((l, i) => <li key={i}>{l.trim()}</li>)}</ul>;
+                        return <div className="text-sm text-gray-500 italic mt-1" style={{ whiteSpace: 'pre-line' }}>{item.description}</div>;
+                      })()}
                       <div className="mt-3 flex items-baseline gap-2">
                         <span className="text-sm text-gray-500">{item.quantity} Adet x {!isHidden ? formatCurrency(convertCurrency(netUnitPrice), sym) : '-'}</span>
                         {!isHidden && <span className="text-lg font-extrabold text-gray-900 ml-auto">{formatCurrency(convertCurrency(netLineTotal), sym)}</span>}
@@ -1185,92 +1197,62 @@ export default function YeniTeklifPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-xs font-bold text-gray-500 uppercase text-left">
-                <th className="py-3 px-2 w-8"></th>
-                <th className="py-3 px-2 w-10">#</th>
-                {!isCompactMode && <th className="py-3 px-2 w-20">Görsel</th>}
-                <th className="py-3 px-2">Ürün</th>
-                <th className="py-3 px-2 text-center w-14">Adet</th>
-                <th className="py-3 px-2 text-right w-32">Birim Fiyat</th>
-                <th className="py-3 px-2 text-right w-28 bg-orange-50">Kâr</th>
-                <th className="py-3 px-2 text-right w-28">Toplam</th>
-                <th className="py-3 px-2 w-28 text-center">İşlem</th>
+                <th className="py-2 px-2 w-8"></th>
+                <th className="py-2 px-2 w-16">Görsel</th>
+                <th className="py-2 px-2">Ürün</th>
+                <th className="py-2 px-2 w-14 text-center">Adet</th>
+                <th className="py-2 px-2 w-36 text-right">Fiyat ({sym})</th>
+                <th className="py-2 px-2 w-28 text-right bg-orange-50/50">Kâr</th>
+                <th className="py-2 px-2 w-28 text-right">Toplam</th>
+                <th className="py-2 px-2 w-20"></th>
               </tr>
             </thead>
             <tbody>
-              {(() => { let productIndex = 0; return items.map((item, idx) => {
+              {(() => { let pIdx = 0; return items.map((item, idx) => {
                 if (item.type === 'section') {
                   return (
-                    <tr
-                      key={item.id}
-                      className="border-b-2 border-gray-300 bg-gray-100"
-                      draggable
-                      onDragStart={() => handleDragStart(idx)}
-                      onDragEnter={() => handleDragEnter(idx)}
-                      onDragEnd={handleDrop}
-                      onDragOver={(e) => e.preventDefault()}
-                    >
-                      <td className="py-2 px-2 cursor-grab text-gray-300 hover:text-gray-600"><GripVertical className="w-4 h-4" /></td>
-                      <td colSpan={isCompactMode ? 6 : 7} className="py-2 px-3">
-                        <div className="flex items-center justify-between">
-                          <input
-                            type="text"
-                            value={item.name}
-                            onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                            className="text-sm font-bold text-gray-700 uppercase tracking-wide bg-transparent border-none outline-none flex-1 text-center"
-                            placeholder="Bölüm başlığı yazın..."
-                          />
-                          <button onClick={() => removeItem(item.id)} className="p-1 rounded hover:bg-red-100 ml-2"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
-                        </div>
+                    <tr key={item.id} className="bg-gray-100 border-b border-gray-200">
+                      <td colSpan={8} className="py-2 px-4 relative">
+                        <input type="text" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full text-center font-bold text-sm uppercase tracking-wide text-gray-700 bg-transparent outline-none" />
+                        <button onClick={() => removeItem(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3" /></button>
                       </td>
                     </tr>
                   );
                 }
-                productIndex++;
+                pIdx++;
                 const netUnitPrice = item.price * (1 - item.item_discount / 100);
-                const netLineTotal = item.total;
                 const displayUnitPrice = convertCurrency(netUnitPrice);
-                const displayLineTotal = convertCurrency(netLineTotal);
-                const itemProfit = (netUnitPrice - item.cost) * item.quantity;
-                const itemProfitPercent = item.cost > 0 ? ((netUnitPrice - item.cost) / item.cost) * 100 : 100;
+                const displayLineTotal = convertCurrency(item.total);
+                const itemProfit = (item.price - item.cost) * item.quantity * (1 - item.item_discount / 100);
+                const itemProfitPercent = item.price > 0 ? ((item.price - item.cost) / item.price) * 100 : 0;
                 return (
-                  <tr
-                    key={item.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 align-top"
-                    draggable
-                    onDragStart={() => handleDragStart(idx)}
-                    onDragEnter={() => handleDragEnter(idx)}
-                    onDragEnd={handleDrop}
-                    onDragOver={(e) => e.preventDefault()}
-                  >
-                    <td className="py-3 px-2 cursor-grab text-gray-300 hover:text-gray-600"><GripVertical className="w-4 h-4" /></td>
-                    <td className="py-3 px-2 text-center text-gray-400 font-medium">{productIndex}</td>
-                    {!isCompactMode && (
-                      <td className="py-3 px-2">
-                        <div className="relative w-16 h-16 border rounded bg-white overflow-hidden group">
-                          {item.image ? <img src={item.image} className="w-full h-full object-contain" onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/64?text=Yok'; }} /> : <div className="w-full h-full bg-gray-100" />}
-                          <button
-                            onClick={() => {
-                              const url = prompt('Yeni görsel URL\'si girin:', item.image || '');
-                              if (url !== null) updateItem(item.id, 'image', url);
-                            }}
-                            className="absolute top-0 right-0 bg-blue-600 text-white p-0.5 rounded-bl opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Görseli değiştir"
-                          >
-                            <ImagePlus className="w-3 h-3" />
-                          </button>
+                  <tr key={item.id} draggable onDragStart={() => handleDragStart(idx)} onDragEnter={() => handleDragEnter(idx)} onDragEnd={handleDrop} onDragOver={(e) => e.preventDefault()} className={`border-b border-gray-100 hover:bg-blue-50/30 transition ${item.shipped ? 'opacity-40 line-through' : ''}`}>
+                    <td className="py-3 px-2 cursor-move text-center">
+                      <GripVertical className="w-3.5 h-3.5 text-gray-300 inline" />
+                      <div className="text-[10px] text-gray-400 mt-0.5">{pIdx}</div>
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="relative w-12 h-12 border rounded bg-white overflow-hidden group">
+                        {item.image ? <img src={item.image} className="w-full h-full object-contain" /> : <div className="w-full h-full bg-gray-100" />}
+                        <button onClick={() => { const url = prompt('Görsel URL:', item.image); if (url !== null) updateItem(item.id, 'image', url); }} className="absolute inset-0 bg-black/40 text-white text-[8px] font-bold opacity-0 group-hover:opacity-100 transition flex items-center justify-center">Görseli değiştir</button>
+                      </div>
+                    </td>
+                    <td className="py-3 px-2 max-w-xs">
+                      <div className="font-bold text-sm text-gray-900 line-clamp-2">{item.name}</div>
+                      {item.sku && <div className="text-[10px] text-gray-400">Ürün kodu</div>}
+                      <div className="mt-1">
+                        <div className="flex items-center gap-1 mb-1">
+                          <button onClick={() => updateItem(item.id, 'description_format', item.description_format === 'numbered' ? 'none' : 'numbered')} className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition ${item.description_format === 'numbered' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'}`} title="Numaralı liste">1.</button>
+                          <button onClick={() => updateItem(item.id, 'description_format', item.description_format === 'bullet' ? 'none' : 'bullet')} className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition ${item.description_format === 'bullet' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'}`} title="Madde işaretli liste">•</button>
                         </div>
-                      </td>
-                    )}
-                    <td className="py-3 px-2 min-w-[180px]">
-                      <textarea value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full bg-transparent resize-none outline-none font-medium text-gray-900" rows={1} placeholder="Ürün adı" />
-                      <input value={item.sku || ''} onChange={(e) => updateItem(item.id, 'sku', e.target.value)} className="w-full bg-transparent outline-none text-[10px] text-gray-400 mt-0.5" placeholder="Ürün kodu" />
-                      <textarea value={item.description} onChange={(e) => updateItem(item.id, 'description', e.target.value)} className="w-full bg-transparent resize-none outline-none text-xs text-gray-500 mt-0.5" rows={1} placeholder="Açıklama" />
+                        <textarea value={item.description} onChange={(e) => updateItem(item.id, 'description', e.target.value)} className="w-full text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-1 outline-none resize-none focus:border-blue-400" placeholder="Teknik özellikler (her satır bir madde)" rows={2} />
+                      </div>
                     </td>
                     <td className="py-3 px-2 text-center">
-                      <input type="number" value={item.quantity} onChange={(e) => updateItem(item.id, 'quantity', e.target.value)} className="w-12 text-center bg-transparent font-semibold" min="1" />
+                      <input type="number" value={item.quantity} onChange={(e) => updateItem(item.id, 'quantity', e.target.value)} className="w-12 text-center text-sm font-bold bg-gray-50 border border-gray-200 rounded" min="1" />
                     </td>
                     <td className="py-3 px-2 text-right">
-                      <div className="flex items-center gap-1 justify-end">
+                      <div className="flex items-center justify-end gap-1">
                         <span className="text-xs text-gray-400">{sym}</span>
                         <input
                           type="number"
