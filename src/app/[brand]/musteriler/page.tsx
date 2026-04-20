@@ -65,7 +65,8 @@ export default function MusterilerPage() {
         </div>
         <button
           onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: '', phone: '', city: '', address: '' }); }}
-          className={`${brand.buttonColor} text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2`}
+          className="text-white px-4 py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition flex items-center gap-2"
+          style={{ backgroundColor: brand.buttonColorHex }}
         >
           <Plus className="w-4 h-4" /> Yeni Müşteri
         </button>

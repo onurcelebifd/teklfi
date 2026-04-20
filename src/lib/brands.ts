@@ -30,6 +30,7 @@ export interface BrandConfig {
   proposalHeaderBg: string;
   proposalHeaderText: string;
   logoDark?: string;
+  buttonColorHex: string;
 }
 
 export const BRANDS: Record<string, BrandConfig> = {
@@ -79,6 +80,7 @@ export const BRANDS: Record<string, BrandConfig> = {
     proposalHeaderBg: '#040023',
     proposalHeaderText: '#ffffff',
     logoDark: 'https://cdn.myikas.com/images/theme-images/28f96c57-de53-42dc-96e5-988cf858f78b/image_540.webp',
+    buttonColorHex: '#f97316',
   },
   guclumutfak: {
     id: 'guclumutfak',
@@ -114,6 +116,43 @@ export const BRANDS: Record<string, BrandConfig> = {
     tableBorderHex: '#fecaca',
     proposalHeaderBg: '#ffffff',
     proposalHeaderText: '#111827',
+    buttonColorHex: '#dc2626',
+  },
+  grandmutfak: {
+    id: 'grandmutfak',
+    name: 'Grand Mutfak',
+    fullName: 'GRAND MUTFAK',
+    logo: '/logos/grandmutfak-logo.png',
+    primaryColor: 'bg-[#1e3a5f]',
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-800',
+    borderColor: 'border-blue-300',
+    headerBg: 'bg-[#1e3a5f]',
+    headerText: 'text-white',
+    buttonColor: 'bg-[#2563eb]',
+    sidebarBg: 'bg-[#1e3a5f]',
+    accentColor: '#1e3a5f',
+    address: [
+      'Adres bilgisi girilecek',
+      'Şehir / İlçe',
+    ],
+    phone: '0000 000 00 00',
+    email: 'info@grandmutfak.com',
+    website: 'www.grandmutfak.com',
+    qrUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://www.grandmutfak.com',
+    slogan: 'Endüstriyel Mutfak Ekipmanları',
+    brandLogos: [],
+    tableHeaderBg: 'bg-[#1e3a5f]',
+    tableHeaderText: 'text-white',
+    tableStripeBg: 'bg-blue-50',
+    tableBorderColor: 'border-blue-200',
+    tableHeaderBgHex: '#1e3a5f',
+    tableHeaderTextHex: '#ffffff',
+    tableStripeBgHex: '#eff6ff',
+    tableBorderHex: '#bfdbfe',
+    proposalHeaderBg: '#1e3a5f',
+    proposalHeaderText: '#ffffff',
+    buttonColorHex: '#2563eb',
   },
 };
 
