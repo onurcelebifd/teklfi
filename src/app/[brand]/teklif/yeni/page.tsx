@@ -665,7 +665,7 @@ export default function YeniTeklifPage() {
                 <img src={brand.logo} alt={brand.name} style={{ maxHeight: '88px', maxWidth: '340px', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }} crossOrigin="anonymous" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <div style={{ textAlign: 'right', paddingTop: 0, marginTop: 0 }}>
-                <h1 className={`text-lg font-extrabold ${brand.textColor}`} style={{ margin: 0, padding: 0, lineHeight: 1 }}>FİYAT TEKLİFİ</h1>
+                <h1 className="text-lg font-extrabold" style={{ margin: 0, padding: 0, lineHeight: 1, color: brand.accentColor }}>FİYAT TEKLİFİ</h1>
                 <div className="text-xs text-gray-600" style={{ marginTop: '6px' }}>
                   <div><span className="font-bold">Teklif No:</span> {proposalNo}</div>
                   <div><span className="font-bold">Tarih:</span> {proposalDate}</div>
@@ -1211,7 +1211,7 @@ export default function YeniTeklifPage() {
               {(() => { let pIdx = 0; return items.map((item, idx) => {
                 if (item.type === 'section') {
                   return (
-                    <tr key={item.id} className="bg-gray-100 border-b border-gray-200">
+                    <tr key={item.id} draggable onDragStart={() => handleDragStart(idx)} onDragEnter={() => handleDragEnter(idx)} onDragEnd={handleDrop} onDragOver={(e) => e.preventDefault()} className="bg-gray-100 border-b border-gray-200 cursor-move">
                       <td colSpan={8} className="py-2 px-4 relative">
                         <input type="text" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full text-center font-bold text-sm uppercase tracking-wide text-gray-700 bg-transparent outline-none" />
                         <button onClick={() => removeItem(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3 h-3" /></button>
